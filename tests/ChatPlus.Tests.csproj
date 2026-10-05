@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Tests for the Unity-free parts of the mod: their source files are compiled in directly. -->
+  <!-- Run: dotnet run -project tests/ChatPlus.Tests.csproj -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <RootNamespace>ChatPlus.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\src\ChatEntry.cs" Link="Mod\ChatEntry.cs" />
+    <Compile Include="..\src\ChatFormat.cs" Link="Mod\ChatFormat.cs" />
+    <Compile Include="..\src\ChatHistory.cs" Link="Mod\ChatHistory.cs" />
+    <Compile Include="..\src\HistoryFormat.cs" Link="Mod\HistoryFormat.cs" />
+    <Compile Include="..\src\Presets.cs" Link="Mod\Presets.cs" />
+    <Compile Include="..\src\SentHistory.cs" Link="Mod\SentHistory.cs" />
+    <Compile Include="..\src\TextUtil.cs" Link="Mod\TextUtil.cs" />
+  </ItemGroup>
+
+</Project>
