@@ -35,10 +35,40 @@ namespace ChatPlus.Tests
             HistoryFormatTests();
             ChatFormatTests();
             SentHistoryTests();
+            HiddenMessageCountsTests();
             PresetTests();
             ChatHistoryTests();
             Console.WriteLine($"{_passes} passed, {_failures} failed");
             return _failures == 0 ? 0 : 1;
+        }
+
+        static void HiddenMessageCountsTests()
+        {
+            var counts = new HiddenMessageCounts();
+            counts.Receive(false, false, true);
+            counts.Receive(false, false, true);
+            counts.Receive(true, false, true);
+            Check(counts.Global == 2 && counts.Local == 1, "collapsed messages counted per channel");
+            counts.Receive(false, true, true);
+            counts.Receive(true, true, true);
+            Check(counts.Global == 2 && counts.Local == 1, "own messages do not increment either counter");
+            counts.ObserveVisibility(true);
+            Check(counts.Global == 2 && counts.Local == 1, "refreshing a collapsed chat preserves counts");
+            counts.ObserveVisibility(false);
+            Check(counts.Global == 0 && counts.Local == 0, "expanding chat resets both channels");
+            counts.Receive(true, false, false);
+            Check(counts.Global == 0 && counts.Local == 0, "visible messages are not counted");
+            for (int i = 0; i < 120; i++)
+                counts.Receive(false, false, true);
+            counts.Receive(true, false, true);
+            Check(counts.Global == 99 && counts.Local == 1, "Global saturation does not cap Local");
+            for (int i = 0; i < 120; i++)
+                counts.Receive(true, false, true);
+            Check(counts.Global == 99 && counts.Local == 99, "both counters capped independently at 99");
+            counts.Receive(false, true, false);
+            Check(counts.Global == 0 && counts.Local == 0, "visible own message also clears stale hidden counts");
+            counts.Receive(true, false, true);
+            Check(counts.Global == 0 && counts.Local == 1, "collapsing again starts fresh counts");
         }
 
         static ChatEntry Entry(string time, bool local, ChatKind kind, string name, string message, string line, string steam = "")

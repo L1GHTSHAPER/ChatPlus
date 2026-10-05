@@ -22,6 +22,12 @@ namespace ChatPlus
         public string SectionHistory;
         public string SectionWindow;
         public string SectionExtras;
+        public string SectionNotifications;
+        public string ShowGlobalCounter;
+        public string ShowLocalCounter;
+        public string CountersHint;
+        public string GlobalCounterPrefix;
+        public string LocalCounterPrefix;
         public string ShowTime;
         public string TimeFormat;
         public string TimeColor;
@@ -96,6 +102,12 @@ namespace ChatPlus
             SectionHistory = "History",
             SectionWindow = "Chat window",
             SectionExtras = "Extras",
+            SectionNotifications = "Collapsed chat notifications",
+            ShowGlobalCounter = "Show the Global message counter",
+            ShowLocalCounter = "Show the Local message counter",
+            CountersHint = "G: Global · L: Local. Both reset when you expand the chat. Hidden counters keep counting.",
+            GlobalCounterPrefix = "G",
+            LocalCounterPrefix = "L",
             ShowTime = "Show when each message was sent",
             TimeFormat = "Format",
             TimeColor = "Color",
@@ -179,6 +191,12 @@ namespace ChatPlus
             SectionHistory = "История",
             SectionWindow = "Окно чата",
             SectionExtras = "Дополнительно",
+            SectionNotifications = "Уведомления свернутого чата",
+            ShowGlobalCounter = "Показывать счетчик глобального чата",
+            ShowLocalCounter = "Показывать счетчик локального чата",
+            CountersHint = "Г: глобальный · Л: локальный. Оба обнуляются при раскрытии чата. Скрытые счетчики продолжают считать.",
+            GlobalCounterPrefix = "Г",
+            LocalCounterPrefix = "Л",
             ShowTime = "Показывать время каждого сообщения",
             TimeFormat = "Формат",
             TimeColor = "Цвет",

@@ -94,6 +94,21 @@ namespace ChatPlus
         }
     }
 
+    // The game writes its combined hidden counter after AddMessageUI; replace it once that write is complete.
+    [HarmonyPatch(typeof(TextChannelManager), "OnChannelMessageReceived")]
+    internal static class ReceivedCounterPatch
+    {
+        [HarmonyPostfix]
+        static void Postfix() => HiddenChatNotifications.Refresh();
+    }
+
+    [HarmonyPatch(typeof(UIManager), nameof(UIManager.ButtonHide))]
+    internal static class HideChatCounterPatch
+    {
+        [HarmonyPostfix]
+        static void Postfix() => HiddenChatNotifications.Refresh();
+    }
+
     /// <summary>The chat of a lobby is set up: put the session's earlier lines back.</summary>
     [HarmonyPatch(typeof(TextChannelManager), "Start")]
     internal static class ChatStartPatch

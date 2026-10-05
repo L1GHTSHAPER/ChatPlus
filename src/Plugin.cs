@@ -18,7 +18,7 @@ namespace ChatPlus
     {
         public const string PluginGuid = "ontogether.chatplus";
         public const string PluginName = "ChatPlus";
-        public const string PluginVersion = "1.0.1";
+        public const string PluginVersion = "1.1.0";
 
         internal const int MinWidth = 70;
         internal const int MaxWidth = 300;
@@ -69,6 +69,9 @@ namespace ChatPlus
         internal ConfigEntry<bool> RememberPosition;
         internal ConfigEntry<string> Position;
         internal ConfigEntry<bool> CullHiddenLines;
+
+        internal ConfigEntry<bool> ShowGlobalCounter;
+        internal ConfigEntry<bool> ShowLocalCounter;
 
         internal ConfigEntry<bool> HighlightMentions;
         internal ConfigEntry<string> HighlightColor;
@@ -131,6 +134,8 @@ namespace ChatPlus
             Patch(typeof(BeginMovePatch), "a resized chat may not be dragged to the right edge");
             Patch(typeof(EndMovePatch), "the chat position is not remembered");
             Patch(typeof(EnterPatch), "the /chatplus command and Up/Down recall will not work");
+            Patch(typeof(ReceivedCounterPatch), "collapsed chat counters update only at the end of the frame");
+            Patch(typeof(HideChatCounterPatch), "collapsed chat counters update only at the end of the frame");
             GameAccess.LogMissingFields();
             ChatCommands.RegisterWithCommandApi();
 
@@ -191,6 +196,13 @@ namespace ChatPlus
             CullHiddenLines = Config.Bind("Window", "CullHiddenLines", true,
                 "Lines scrolled out of view are not drawn, which keeps a long chat fast. Turn it off if chat text shows " +
                 "outside the chat window.");
+
+            ShowGlobalCounter = Config.Bind("Notifications", "ShowGlobalCounter", true,
+                "Show a separate Global message counter while the chat is collapsed. Hiding it does not stop counting; " +
+                "both counters reset when the chat is expanded.");
+            ShowLocalCounter = Config.Bind("Notifications", "ShowLocalCounter", true,
+                "Show a separate Local message counter while the chat is collapsed. Hiding it does not stop counting; " +
+                "both counters reset when the chat is expanded.");
 
             HighlightMentions = Config.Bind("Extras", "HighlightMentions", true,
                 "Highlight messages that contain your name or one of the keywords.");
@@ -274,6 +286,7 @@ namespace ChatPlus
 
         void LateUpdate()
         {
+            HiddenChatNotifications.Refresh();
             // After the input field has handled the arrow key itself (it moves the caret to the start).
             if (_caretToEnd == null)
                 return;
@@ -438,6 +451,10 @@ namespace ChatPlus
             {
                 ChatWindow.ApplyCulling();
             }
+            else if (changed == ShowGlobalCounter || changed == ShowLocalCounter)
+            {
+                HiddenChatNotifications.Refresh();
+            }
         }
 
         /// <summary>New lines use the changed look at once; the existing ones are redrawn shortly (see RestyleDelay).</summary>
@@ -578,6 +595,7 @@ namespace ChatPlus
 
         void OnDestroy()
         {
+            HiddenChatNotifications.Clear();
             Config.SettingChanged -= OnSettingChanged;
             if (_saveAt >= 0f)
                 SaveNow();

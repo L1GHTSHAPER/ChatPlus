@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0
+
+- Split collapsed-chat notifications into separate Global and Local message counters (up to 99 each), reset when the chat is expanded.
+- Added independent visibility settings for both counters in the F3 window (English/Russian) and the Notifications config section. Changes apply while the game is running.
+- Only received player messages count; own messages, restored history and game notifications are excluded.
+
 ## 1.0.1
 
 - Added the public GitHub repository link to the package website and README.

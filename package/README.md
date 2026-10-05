@@ -12,6 +12,7 @@ A BepInEx mod for [On Together](https://store.steampowered.com/app/2688490/On_To
 - **History file.** The session's chat is written to `BepInEx/ChatPlus/chat-history.tsv` (opens in Excel, LibreOffice or any text editor). On the next game start it is moved to `chat-history.previous.tsv`, so the history lasts until the game is restarted. Optionally it can be kept across restarts, and readable daily logs (`BepInEx/ChatPlus/logs/yyyy-MM-dd.txt`) can be written too.
 - **Resizable chat window.** Drag the handle at the chat's top-right corner (it shows while the chat is active), or set the width and height in the settings. The frame, the message area and the input field follow; double-click the handle for the game's size. The text size can be changed separately.
 - **The chat stays where you put it**, also after a lobby change or a restart.
+- **Separate counters while the chat is collapsed:** Global (`G`, or `Г` in Russian) and Local (`L` / `Л`), each independently shown or hidden in the settings. Both are enabled by default and reset when you expand the chat. Each counts received player messages up to 99; your messages, restored history and game notifications do not count. Hiding a counter keeps its count until you expand the chat or leave the lobby.
 - **Mention highlight:** messages with your name or your keywords are highlighted.
 - **Up / Down** in the empty input field bring back the messages and commands you sent before.
 - **Right-click** a message to copy its text.
@@ -64,6 +65,8 @@ A BepInEx mod for [On Together](https://store.steampowered.com/app/2688490/On_To
 | Window | `RememberPosition` | `true` | Keep the chat where you dragged it. |
 | Window | `Position` | *(empty)* | Saved automatically. |
 | Window | `CullHiddenLines` | `true` | Lines scrolled out of view are not drawn (keeps a long chat fast). Turn it off if chat text shows outside the chat window. |
+| Notifications | `ShowGlobalCounter` | `true` | Show the Global message counter beside the reopen-chat button while the chat is collapsed. Applies immediately. |
+| Notifications | `ShowLocalCounter` | `true` | Show the Local message counter beside the reopen-chat button while the chat is collapsed. Applies immediately. Disable both to hide all collapsed-chat counters. |
 | Extras | `HighlightMentions` | `true` | Highlight messages that mention you. |
 | Extras | `HighlightColor` | `#F2C46D` | Highlight color (made see-through). |
 | Extras | `Keywords` | *(empty)* | More words that highlight a message, separated by commas. |

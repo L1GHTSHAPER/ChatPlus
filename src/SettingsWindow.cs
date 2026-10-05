@@ -216,6 +216,14 @@ namespace ChatPlus
             GUILayout.EndHorizontal();
             GUILayout.EndVertical();
 
+            // Collapsed chat notifications
+            GUILayout.BeginVertical(_skin.Panel);
+            GUILayout.Label(lang.SectionNotifications, _skin.SectionTitle);
+            ToggleRow(plugin.ShowGlobalCounter, lang.ShowGlobalCounter);
+            ToggleRow(plugin.ShowLocalCounter, lang.ShowLocalCounter);
+            GUILayout.Label(lang.CountersHint, _skin.Hint);
+            GUILayout.EndVertical();
+
             // Extras
             GUILayout.BeginVertical(_skin.Panel);
             GUILayout.Label(lang.SectionExtras, _skin.SectionTitle);

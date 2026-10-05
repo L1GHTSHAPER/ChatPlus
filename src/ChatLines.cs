@@ -80,6 +80,7 @@ namespace ChatPlus
             TMP_Text line = FindNewLine(lines, mark);
             if (line == null)
                 return;
+            HiddenChatNotifications.MessageAdded(chat, isLocal, own);
             var entry = new ChatEntry
             {
                 Time = DateTime.Now,

@@ -17,6 +17,7 @@
     <Compile Include="..\src\HistoryFormat.cs" Link="Mod\HistoryFormat.cs" />
     <Compile Include="..\src\Presets.cs" Link="Mod\Presets.cs" />
     <Compile Include="..\src\SentHistory.cs" Link="Mod\SentHistory.cs" />
+    <Compile Include="..\src\HiddenMessageCounts.cs" Link="Mod\HiddenMessageCounts.cs" />
     <Compile Include="..\src\TextUtil.cs" Link="Mod\TextUtil.cs" />
   </ItemGroup>
 
