@@ -1,6 +1,6 @@
 {
   "name": "ChatPlus",
-  "version_number": "1.1.0",
+  "version_number": "1.1.1",
   "website_url": "https://github.com/L1GHTSHAPER/ChatPlus",
   "description": "Better chat: time of every message, longer history kept across lobby changes and saved to a file, resizable chat window and text size, mention highlight, Up/Down recall, right-click copy. Settings: F3 or /chatplus.",
   "dependencies": [

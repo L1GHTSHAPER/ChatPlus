@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1
+
+- Updated the package icon and README with the rounded LightShaper logo and black, white and purple visual style.
+- Plugin behavior is unchanged.
+
 ## 1.1.0
 
 - Split collapsed-chat notifications into separate Global and Local message counters (up to 99 each), reset when the chat is expanded.

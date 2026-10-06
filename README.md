@@ -1,5 +1,7 @@
 # ChatPlus
 
+![LightShaper](tools/assets/lightshaper-wordmark.png)
+
 [Source code on GitHub](https://github.com/L1GHTSHAPER/ChatPlus) | [Report an issue](https://github.com/L1GHTSHAPER/ChatPlus/issues) | [Thunderstore](https://thunderstore.io/c/on-together/p/LightShaper/ChatPlus/)
 
 A BepInEx mod for [On Together](https://store.steampowered.com/app/2688490/On_Together/) that makes the chat nicer to use: the time of every message, a much longer history that comes back after a lobby change and is saved to a file, and a chat window you can resize.
