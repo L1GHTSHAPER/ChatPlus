@@ -76,6 +76,7 @@ namespace ChatPlus
             _root = null;
             _grip = null;
             _resizing = false;
+            ChatSelection.Clear();
             _reflowAt = -1f;
             Layouts.Clear();
             Viewports.Clear();
@@ -93,11 +94,15 @@ namespace ChatPlus
                 if (frame != null)
                 {
                     SliceFrame(frame.GetComponent<Image>());
+                    BackgroundOpacity.Attach(frame.GetComponent<Image>());
                     Reanchor(frame, Vector2.zero, Vector2.one);
                 }
                 RectTransform inputBackground = background.Find(InputBackgroundName) as RectTransform;
                 if (inputBackground != null)
+                {
+                    BackgroundOpacity.Attach(inputBackground.GetComponent<Image>());
                     Reanchor(inputBackground, Vector2.zero, new Vector2(1f, 0f));
+                }
                 RectTransform moveHandle = background.Find(MoveHandleName) as RectTransform;
                 if (moveHandle != null)
                     Reanchor(moveHandle, new Vector2(1f, 0f), new Vector2(1f, 0f));
@@ -163,6 +168,13 @@ namespace ChatPlus
                 return;
             if ((corner - Corner).sqrMagnitude > 0.25f)
                 SetCorner(corner);
+        }
+
+        internal static void ApplyOpacity()
+        {
+            if (!Ready) return;
+            foreach (BackgroundOpacity opacity in _root.GetComponentsInChildren<BackgroundOpacity>(true))
+                opacity.Refresh();
         }
 
         /// <summary>Called every frame: re-wraps the lines once a width change has settled.</summary>

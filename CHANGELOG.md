@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.3.0
+
+- Select parts of chat text by dragging with the left mouse button, including across messages and wrapped lines. Ctrl+C copies the selection; Escape or an outside click clears it. The mouse wheel scrolls, and dragging beyond the viewport scrolls the selection.
+- Right-click within the selection copies it; otherwise right-click still copies the whole message. A normal left click still opens the player's card.
+- Added a background opacity slider (0–100%) beside the existing text size slider (60–200%) in F3. Background opacity leaves text and controls unchanged and respects the game's fade.
+- Selection is enabled by default and can be disabled in F3 or with Extras.SelectText. Window.BackgroundOpacity defaults to 100%; settings are saved and apply during play.
+
+## 1.2.0
+
+- Added a message editor to the top of the F3 settings window, with a draft, live TextMeshPro preview and an Insert into chat button.
+- Added optional outgoing solid colors and gradients, HEX entry, color presets and RGB sliders, and bold/italic text.
+- Added font choices for the normal game font and built-in Liberation Sans. Recipients do not need the mod; Liberation Sans changes Latin letters, while Cyrillic uses the usual fallback font.
+- Outgoing formatting uses standard font/color tags. Gradients use up to eight color bands and reduce the number to fit the 250-character message limit, preserving Unicode text elements. Oversized styled messages are rejected with a local explanation and keep the draft.
+- Commands, explicitly tagged messages, and the raw drafts used by Up/Down recall keep their original text. Formatting is off by default; all options are saved in the Outgoing config section.
+
 ## 1.1.1
 
 - Updated the package icon and README with the rounded LightShaper logo and black, white and purple visual style.

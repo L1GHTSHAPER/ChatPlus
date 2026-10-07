@@ -34,12 +34,39 @@ namespace ChatPlus.Tests
             TextUtilTests();
             HistoryFormatTests();
             ChatFormatTests();
+            OutgoingFormatTests();
             SentHistoryTests();
             HiddenMessageCountsTests();
             PresetTests();
             ChatHistoryTests();
+            SelectionTextTests();
             Console.WriteLine($"{_passes} passed, {_failures} failed");
             return _failures == 0 ? 0 : 1;
+        }
+
+        static void SelectionTextTests()
+        {
+            const string rich = "<b>Привет</b> 😀<br>мир";
+            var glyphs = new List<SelectionGlyph>();
+            for (int i = 3; i < 9; i++) glyphs.Add(new SelectionGlyph(i, 1));
+            glyphs.Add(new SelectionGlyph(13, 1));
+            glyphs.Add(new SelectionGlyph(14, 2));
+            glyphs.Add(new SelectionGlyph(16, 4, "\n"));
+            for (int i = 20; i < 23; i++) glyphs.Add(new SelectionGlyph(i, 1));
+            Equal("Привет 😀\nмир", SelectionText.Slice(rich, glyphs, 0, 12), "selection copies displayed text without formatting tags");
+            Equal("иве", SelectionText.Slice(rich, glyphs, 2, 5), "partial Cyrillic selection");
+            Equal("мир", SelectionText.Slice(rich, glyphs, 12, 9), "backward selection is normalized");
+            Equal("😀", SelectionText.Slice(rich, glyphs, 7, 8), "emoji keeps both UTF-16 code units");
+            Equal("\n", SelectionText.Slice(rich, glyphs, 8, 9), "rendered break copies a newline");
+            Equal("", SelectionText.Slice(rich, glyphs, 4, 4), "collapsed selection copies nothing");
+            Equal("Привет 😀\nмир", SelectionText.Slice(rich, glyphs, -20, 99), "stale bounds are clamped");
+            const string literal = "<noparse><b>text</b></noparse>";
+            var literalGlyphs = new List<SelectionGlyph>();
+            for (int i = 9; i < 20; i++) literalGlyphs.Add(new SelectionGlyph(i, 1));
+            Equal("<b>text</b>", SelectionText.Slice(literal, literalGlyphs, 0, 11), "literal tags in noparse are preserved");
+            Equal("e\u0301", SelectionText.Slice("<b>e\u0301</b>", new[] { new SelectionGlyph(3, 1), new SelectionGlyph(4, 1) }, 0, 2), "combining accents are preserved");
+            Equal("\uFFFC", SelectionText.Slice("<sprite=0>", new[] { new SelectionGlyph(0, 10, "\uFFFC") }, 0, 1), "sprite markup is not leaked into clipboard");
+            Equal("", SelectionText.Slice("test", new[] { new SelectionGlyph(-1, 1), new SelectionGlyph(3, 5) }, 0, 2), "invalid rendered spans are ignored");
         }
 
         static void HiddenMessageCountsTests()
@@ -69,6 +96,62 @@ namespace ChatPlus.Tests
             Check(counts.Global == 0 && counts.Local == 0, "visible own message also clears stale hidden counts");
             counts.Receive(true, false, true);
             Check(counts.Global == 0 && counts.Local == 1, "collapsing again starts fresh counts");
+        }
+
+        static void OutgoingFormatTests()
+        {
+            var style = new OutgoingStyle { Enabled = true, ColorMode = MessageColorMode.Solid, Color = "#ff8040" };
+            Check(OutgoingFormat.TryCompose("Привет", style, out string wire), "solid message fits");
+            Equal("<#FF8040>Привет</color>", wire, "solid normalized standard color tag");
+            style.Font = MessageFont.LiberationSans;
+            style.Bold = style.Italic = true;
+            Check(OutgoingFormat.TryCompose("Hello", style, out wire), "font and emphasis fit");
+            Equal("<font=\"LiberationSans SDF\"><b><i><#FF8040>Hello</color></i></b></font>", wire, "only built-in font, balanced wrappers");
+
+            foreach (string command in new[] { "/chatplus", "/music stop", " /unknown foo" })
+            {
+                Check(OutgoingFormat.TryCompose(command, style, out wire), "command allowed");
+                Equal(command, wire, "commands never formatted");
+            }
+            const string manual = "<color=#FF0000>Hello</color>";
+            Check(OutgoingFormat.TryCompose(manual, style, out wire), "manual formatting allowed");
+            Equal(manual, wire, "manual markup not split or wrapped");
+            style.Enabled = false;
+            Check(OutgoingFormat.TryCompose("hello", style, out wire), "format off");
+            Equal("hello", wire, "format off leaves text unchanged");
+            style = new OutgoingStyle { Enabled = true, ColorMode = MessageColorMode.Gradient, Color = "#FF0000", EndColor = "#0000FF" };
+            Check(OutgoingFormat.TryCompose("AB", style, out wire), "two-letter gradient fits");
+            Equal("<#FF0000>A</color><#0000FF>B</color>", wire, "gradient endpoints and balanced colors");
+            string unicode = "Е\u0308🙂👨‍👩‍👧‍👦Привет";
+            Check(OutgoingFormat.TryCompose(unicode, style, out wire), "Unicode gradient fits");
+            Equal(unicode, TextUtil.StripTags(wire), "gradient preserves all Unicode content");
+            Check(!wire.Contains("Е</color>") && !wire.Contains("👨</color>"), "gradient does not split text elements");
+            Check(OutgoingFormat.TryCompose("A", style, out wire), "single character gradient");
+            Equal("<#FF0000>A</color>", wire, "one character uses the first color");
+            style.EndColor = style.Color;
+            Check(OutgoingFormat.TryCompose(new string('x', 233), style, out wire) && wire.Length == 250, "identical gradient colors fit as one band");
+            style.EndColor = "#0000FF";
+            Check(OutgoingFormat.TryCompose(new string('x', 216), style, out wire) && wire.Length == 250, "gradient reduces to two bands at budget boundary");
+            Check(!OutgoingFormat.TryCompose(new string('x', 217), style, out _), "too-long gradient rejected rather than truncated");
+            for (int length = 1; length <= 250; length++)
+            {
+                string draft = new string('x', length);
+                if (OutgoingFormat.TryCompose(draft, style, out wire))
+                {
+                    Check(wire.Length <= 250, "gradient stays in wire budget " + length);
+                    Equal(draft, TextUtil.StripTags(wire), "gradient keeps complete draft " + length);
+                }
+            }
+            style.ColorMode = MessageColorMode.Solid;
+            Check(OutgoingFormat.TryCompose(new string('x', 233), style, out wire) && wire.Length == 250, "solid exact 250 limit");
+            Check(!OutgoingFormat.TryCompose(new string('x', 234), style, out _), "solid overflow rejected");
+            style.ColorMode = MessageColorMode.Original;
+            Check(OutgoingFormat.TryCompose(new string('x', 250), style, out wire), "original exact limit");
+            Check(!OutgoingFormat.TryCompose(new string('x', 251), style, out _), "original over limit rejected when editor active");
+            style.ColorMode = MessageColorMode.Solid;
+            style.Color = "not a color";
+            Check(OutgoingFormat.TryCompose("hi", style, out wire), "invalid config color has safe fallback");
+            Equal("<#F2C46D>hi</color>", wire, "safe default for invalid color");
         }
 
         static ChatEntry Entry(string time, bool local, ChatKind kind, string name, string message, string line, string steam = "")

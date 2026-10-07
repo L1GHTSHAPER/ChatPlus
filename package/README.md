@@ -17,9 +17,13 @@ A BepInEx mod for [On Together](https://store.steampowered.com/app/2688490/On_To
 - **Separate counters while the chat is collapsed:** Global (`G`, or `Г` in Russian) and Local (`L` / `Л`), each independently shown or hidden in the settings. Both are enabled by default and reset when you expand the chat. Each counts received player messages up to 99; your messages, restored history and game notifications do not count. Hiding a counter keeps its count until you expand the chat or leave the lobby.
 - **Mention highlight:** messages with your name or your keywords are highlighted.
 - **Up / Down** in the empty input field bring back the messages and commands you sent before.
-- **Right-click** a message to copy its text.
+- **Select and copy text:** drag with the left mouse button, within a message or across multiple messages, then press **Ctrl+C**. **Escape** or a click elsewhere clears the selection. The mouse wheel scrolls; dragging beyond the message viewport scrolls too. An ordinary click still opens the player's card.
+- **Right-click** within the selection to copy it, or right-click another message to copy its whole text.
+- **Background opacity:** set it from 0% (transparent) to 100% (the original background), separately from the text size. Text and controls keep their opacity.
 - In-game settings window (**F3** or `/chatplus`); the same settings are in the mod manager's config editor, and edits made there apply while the game is running.
-- Client-side only: nothing is sent to other players. English and Russian interface (follows the game's language).
+- **Message editor** at the top of the F3 window: a draft, live preview using the game's text renderer, font selection, solid colors or gradients, bold and italic. Choose colors from presets, type `#RRGGBB`, or click the swatch for RGB sliders. **Insert into chat** copies the draft into the normal chat input; press Enter there to send.
+- Optional outgoing formatting uses the game's standard text tags, so recipients do not need ChatPlus. Font choices are the normal game font and built-in **Liberation Sans**; Liberation Sans changes Latin letters, while Russian letters keep the usual fallback font. Gradients use up to eight color bands and fewer bands when needed to fit the game's 250-character limit (including tags). Messages that cannot fit are not sent or truncated, and the draft is kept. Commands and manually tagged messages are left alone.
+- Only the sender needs the mod. Other features remain local; outgoing formatting is sent as part of the ordinary message text. English and Russian interface (follows the game's language).
 
 ## Usage
 
@@ -29,6 +33,8 @@ A BepInEx mod for [On Together](https://store.steampowered.com/app/2688490/On_To
 | Resize the chat | drag the handle at its top-right corner; double-click it for the normal size |
 | Size from the chat | `/chatplus size 150 120` (width and height in %), `/chatplus size reset` |
 | Text size | `/chatplus text 120` |
+| Background opacity | **F3 → Chat window → Background opacity** (0–100%) |
+| Select / copy text | left-drag, then **Ctrl+C** or right-click within the selection; **Escape** clears |
 | Message time | `/chatplus time on`, `/chatplus time off`, `/chatplus time format HH:mm:ss` |
 | Lines kept in the chat | `/chatplus lines 300 150` (Global, Local) |
 | Clear the chat | `/chatplus clear` (the history keeps the lines) |
@@ -49,6 +55,11 @@ A BepInEx mod for [On Together](https://store.steampowered.com/app/2688490/On_To
 |---|---|---|---|
 | General | `Language` | `Auto` | `Auto` (the game's language), `English`, `Russian`. |
 | General | `SettingsWindow` | `F3` | Opens / closes the settings window. |
+| Outgoing | `Enabled` | `false` | Apply the editor's style to messages you send; visible on unmodified clients. |
+| Outgoing | `Font` | `GameDefault` | `GameDefault` or `LiberationSans`. The latter changes Latin letters; Cyrillic uses the normal fallback. |
+| Outgoing | `ColorMode` | `Original` | `Original`, `Solid` or `Gradient`. |
+| Outgoing | `Color`, `EndColor` | `#F2C46D`, `#6AA8FF` | Solid/first color and last gradient color, as `#RRGGBB`. |
+| Outgoing | `Bold`, `Italic` | `false`, `false` | Bold and italic tags on outgoing messages. |
 | Time | `Enabled` | `true` | Show the time in front of every message. |
 | Time | `Format` | `HH:mm` | .NET time format: `HH:mm`, `HH:mm:ss`, `h:mm tt`, `[HH:mm]`... |
 | Time | `Color` | `#F5EDE1A6` | `#RRGGBB` or `#RRGGBBAA`; empty = the text's color. |
@@ -63,6 +74,7 @@ A BepInEx mod for [On Together](https://store.steampowered.com/app/2688490/On_To
 | History | `DailyLogs` | `false` | Also write readable logs, one file per day, to `BepInEx/ChatPlus/logs`. |
 | Window | `Width`, `Height` | `100`, `100` | Chat window size in % of the game's size (70-300, 50-200). |
 | Window | `TextSize` | `100` | Chat text size in % (60-200). |
+| Window | `BackgroundOpacity` | `100` | Background opacity in % (0-100). Text and controls are unaffected. |
 | Window | `ResizeHandle` | `true` | Show the resize handle on the chat. |
 | Window | `RememberPosition` | `true` | Keep the chat where you dragged it. |
 | Window | `Position` | *(empty)* | Saved automatically. |
@@ -73,7 +85,8 @@ A BepInEx mod for [On Together](https://store.steampowered.com/app/2688490/On_To
 | Extras | `HighlightColor` | `#F2C46D` | Highlight color (made see-through). |
 | Extras | `Keywords` | *(empty)* | More words that highlight a message, separated by commas. |
 | Extras | `RecallSentMessages` | `true` | Up / Down in the empty input field bring back sent messages. |
-| Extras | `RightClickCopies` | `true` | A right click on a message copies its text. |
+| Extras | `RightClickCopies` | `true` | A right click copies the selection on that message, or the whole message without a selection. |
+| Extras | `SelectText` | `true` | Left-drag selects text across messages; Ctrl+C copies, Escape clears. Disable to restore dragging the scroll view from messages. |
 
 ## Files
 
@@ -96,3 +109,19 @@ The files are outside `BepInEx/config`, so they are not included when you export
 **Thunderstore Mod Manager / r2modman:** install from the mod list, or use *Settings -> Import local mod* with the package zip.
 
 **Manual:** install [BepInExPack](https://thunderstore.io/c/on-together/p/BepInEx/BepInExPack/), then copy `ChatPlus.dll` into `BepInEx/plugins/`.
+
+## Building from source
+
+Requires Windows, .NET SDK 6.0 or newer, an installed copy of On Together, and BepInEx 5 (for example, a Thunderstore Mod Manager / r2modman profile).
+
+From the repository directory, run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\build.ps1 -GameDir "C:\path\to\On-Together" -BepInExCore "C:\path\to\profile\BepInEx\core"
+```
+
+`GameDir` must contain `OnTogether.exe` and `OnTogether_Data\Managed`. `BepInExCore` must contain `BepInEx.dll` and `0Harmony.dll`. Game and BepInEx assemblies are referenced locally and are not distributed in this repository.
+
+The build creates the plugin DLL in `src/bin/Release/` and the installable Thunderstore archive in `dist/`. Ready-to-install archives are also available in [GitHub Releases](https://github.com/L1GHTSHAPER/ChatPlus/releases).
+
+Run the existing tests with .NET SDK 9.0 or newer: `dotnet run --project tests/ChatPlus.Tests.csproj`.

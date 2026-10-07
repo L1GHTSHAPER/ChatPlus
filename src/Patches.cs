@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using HarmonyLib;
 using TMPro;
 using UnityEngine;
@@ -217,7 +218,7 @@ namespace ChatPlus
         [HarmonyPrefix]
         [HarmonyPriority(Priority.First)]
         [HarmonyBefore("ontogether.chatsounds", "ontogether.localchatrange", "com.on-together-mods.commandapi", "com.andrewlin.ontogether.alpha")]
-        static void Prefix()
+        static bool Prefix()
         {
             TMP_InputField input;
             string[] args;
@@ -225,17 +226,25 @@ namespace ChatPlus
             {
                 input = GameAccess.MessageInput;
                 if (input == null)
-                    return;
+                    return true;
                 string text = input.text;
                 Plugin.Instance.Sent.Add(text);
                 if (!ChatCommands.TryParse(text, out args))
-                    return;
+                {
+                    if (!OutgoingFormat.TryCompose(text, Plugin.Instance.BuildOutgoingStyle(), out _))
+                    {
+                        GameAccess.Notify(Lang.Current.OutgoingTooLong);
+                        input.ActivateInputField();
+                        return false; // Preserve the draft and focus; the game must not truncate it.
+                    }
+                    return true;
+                }
                 input.text = string.Empty;
             }
             catch (Exception e)
             {
                 Plugin.LogError("Could not read the chat input: ", e);
-                return;
+                return true;
             }
             try
             {
@@ -244,6 +253,42 @@ namespace ChatPlus
             catch (Exception e)
             {
                 Plugin.LogError("Chat command failed: ", e);
+            }
+            return true;
+        }
+    }
+
+    // Format the outgoing RPC argument, never the input field: other mods still see their original commands,
+    // history recall keeps the draft, and receivers use the game's normal message path.
+    [HarmonyPatch(typeof(TextChannelManager), nameof(TextChannelManager.SendMessageAsync))]
+    internal static class OutgoingMessagePatch
+    {
+        [HarmonyPrefix]
+        [HarmonyPriority(Priority.Last)]
+        static bool Prefix(ref byte[] textBytes)
+        {
+            Plugin plugin = Plugin.Instance;
+            if (plugin == null || !plugin.OutgoingEnabled.Value || textBytes == null)
+                return true;
+            try
+            {
+                string draft = Encoding.Unicode.GetString(textBytes);
+                if (!OutgoingFormat.TryCompose(draft, plugin.BuildOutgoingStyle(), out string wire))
+                {
+                    // A mod may send without OnEnterPressed. Keep that draft rather than sending broken tags.
+                    TMP_InputField input = GameAccess.MessageInput;
+                    if (input != null) input.text = draft;
+                    GameAccess.Notify(Lang.Current.OutgoingTooLong);
+                    return false;
+                }
+                textBytes = Encoding.Unicode.GetBytes(wire);
+                return true;
+            }
+            catch (Exception e)
+            {
+                Plugin.LogError("Could not format outgoing message: ", e);
+                GameAccess.Notify(Lang.Current.OutgoingFailed);
+                return false;
             }
         }
     }

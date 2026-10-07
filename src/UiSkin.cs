@@ -34,6 +34,9 @@ namespace ChatPlus
         public readonly GUIStyle SectionTitle;
         public readonly GUIStyle Value;
         public readonly GUIStyle Field;
+        public readonly GUIStyle EditorInput;
+        public readonly GUIStyle EditorHex;
+        public readonly GUIStyle ColorButton;
         public readonly GUIStyle Hint;
         public readonly GUIStyle Button;
         public readonly GUIStyle SmallButton;
@@ -101,6 +104,12 @@ namespace ChatPlus
             Field.padding = new RectOffset(8, 8, 0, 0);
             Field.margin = new RectOffset(2, 2, 0, 0);
             Field.normal.background = Box(16, 16, 5f, FieldColor, PanelBorder);
+            EditorHex = new GUIStyle(Field) { alignment = TextAnchor.MiddleLeft };
+            EditorInput = new GUIStyle(EditorHex) { fixedHeight = 0f, wordWrap = true, padding = new RectOffset(8, 8, 6, 6) };
+            ColorButton = new GUIStyle { fixedWidth = 18f, fixedHeight = 18f, margin = new RectOffset(6, 2, 3, 3) };
+            ColorButton.normal.background = Make(1, 1, new[] { Color.white });
+            ColorButton.hover.background = ColorButton.normal.background;
+            ColorButton.active.background = ColorButton.normal.background;
 
             Hint = Text(11, MutedColor);
             Hint.wordWrap = true;

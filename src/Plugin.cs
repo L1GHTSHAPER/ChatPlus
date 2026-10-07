@@ -18,7 +18,7 @@ namespace ChatPlus
     {
         public const string PluginGuid = "ontogether.chatplus";
         public const string PluginName = "ChatPlus";
-        public const string PluginVersion = "1.1.1";
+        public const string PluginVersion = "1.3.0";
 
         internal const int MinWidth = 70;
         internal const int MaxWidth = 300;
@@ -65,6 +65,7 @@ namespace ChatPlus
         internal ConfigEntry<int> Width;
         internal ConfigEntry<int> Height;
         internal ConfigEntry<int> TextSize;
+        internal ConfigEntry<int> BackgroundOpacity;
         internal ConfigEntry<bool> ResizeHandle;
         internal ConfigEntry<bool> RememberPosition;
         internal ConfigEntry<string> Position;
@@ -78,6 +79,15 @@ namespace ChatPlus
         internal ConfigEntry<string> Keywords;
         internal ConfigEntry<bool> RecallSent;
         internal ConfigEntry<bool> RightClickCopy;
+        internal ConfigEntry<bool> SelectText;
+
+        internal ConfigEntry<bool> OutgoingEnabled;
+        internal ConfigEntry<MessageFont> OutgoingFont;
+        internal ConfigEntry<MessageColorMode> OutgoingColorMode;
+        internal ConfigEntry<string> OutgoingColor;
+        internal ConfigEntry<string> OutgoingEndColor;
+        internal ConfigEntry<bool> OutgoingBold;
+        internal ConfigEntry<bool> OutgoingItalic;
 
         internal ChatHistory History { get; private set; }
         internal SentHistory Sent { get; } = new SentHistory(SentCapacity);
@@ -134,6 +144,7 @@ namespace ChatPlus
             Patch(typeof(BeginMovePatch), "a resized chat may not be dragged to the right edge");
             Patch(typeof(EndMovePatch), "the chat position is not remembered");
             Patch(typeof(EnterPatch), "the /chatplus command and Up/Down recall will not work");
+            Patch(typeof(OutgoingMessagePatch), "outgoing message formatting will not work");
             Patch(typeof(ReceivedCounterPatch), "collapsed chat counters update only at the end of the frame");
             Patch(typeof(HideChatCounterPatch), "collapsed chat counters update only at the end of the frame");
             GameAccess.LogMissingFields();
@@ -186,6 +197,9 @@ namespace ChatPlus
                 new ConfigDescription("Height of the chat window, in percent of the game's size.", new AcceptableValueRange<int>(MinHeight, MaxHeight)));
             TextSize = Config.Bind("Window", "TextSize", 100,
                 new ConfigDescription("Size of the chat text, in percent of the game's size.", new AcceptableValueRange<int>(MinTextSize, MaxTextSize)));
+            BackgroundOpacity = Config.Bind("Window", "BackgroundOpacity", 100,
+                new ConfigDescription("Chat background opacity in percent: 0 = transparent, 100 = the game's background. Text is unaffected.",
+                    new AcceptableValueRange<int>(0, 100)));
             ResizeHandle = Config.Bind("Window", "ResizeHandle", true,
                 "Show a handle at the top-right corner of the chat (while the chat is active) to resize it with the mouse. " +
                 "Double-click the handle for the game's size.");
@@ -214,8 +228,32 @@ namespace ChatPlus
             RecallSent = Config.Bind("Extras", "RecallSentMessages", true,
                 "In the empty chat input field, Up and Down bring back the messages and commands you sent before.");
             RightClickCopy = Config.Bind("Extras", "RightClickCopies", true,
-                "A right click on a chat message copies its text.");
+                "A right click copies the selection on that message, or the whole message when nothing is selected.");
+            SelectText = Config.Bind("Extras", "SelectText", true,
+                "Drag with the left mouse button to select chat text, including across messages. Ctrl+C copies; Escape clears. Mouse wheel scrolls.");
+
+            OutgoingEnabled = Config.Bind("Outgoing", "Enabled", false,
+                "Format messages you send using standard tags visible on unmodified clients. Commands and manually tagged messages are left alone.");
+            OutgoingFont = Config.Bind("Outgoing", "Font", MessageFont.GameDefault,
+                "GameDefault or LiberationSans. LiberationSans is built into the game but has no Cyrillic glyphs; Russian letters use the usual fallback font.");
+            OutgoingColorMode = Config.Bind("Outgoing", "ColorMode", MessageColorMode.Original,
+                "Original, Solid or Gradient. Gradients use up to eight standard color bands, reduced when needed to fit the game's 250-character message limit.");
+            OutgoingColor = Config.Bind("Outgoing", "Color", "#F2C46D", "Message color, or the first gradient color: #RRGGBB.");
+            OutgoingEndColor = Config.Bind("Outgoing", "EndColor", "#6AA8FF", "Last gradient color: #RRGGBB.");
+            OutgoingBold = Config.Bind("Outgoing", "Bold", false, "Use the game's bold text tag on outgoing messages.");
+            OutgoingItalic = Config.Bind("Outgoing", "Italic", false, "Use the game's italic text tag on outgoing messages.");
         }
+
+        internal OutgoingStyle BuildOutgoingStyle() => new OutgoingStyle
+        {
+            Enabled = OutgoingEnabled.Value,
+            Font = OutgoingFont.Value,
+            ColorMode = OutgoingColorMode.Value,
+            Color = OutgoingColor.Value,
+            EndColor = OutgoingEndColor.Value,
+            Bold = OutgoingBold.Value,
+            Italic = OutgoingItalic.Value
+        };
 
         void Patch(Type patchClass, string consequence)
         {
@@ -263,6 +301,7 @@ namespace ChatPlus
                 HandleHotkeys();
                 HandleRecall();
                 ChatWindow.Tick();
+                ChatSelection.Tick(_window != null && _window.enabled);
                 PollConfigFile();
                 float now = Time.unscaledTime;
                 if (_restyleAt >= 0f && now >= _restyleAt)
@@ -287,6 +326,8 @@ namespace ChatPlus
         void LateUpdate()
         {
             HiddenChatNotifications.Refresh();
+            try { ChatSelection.LateTick(); }
+            catch (Exception e) { LogError("Could not update chat selection: ", e); ChatSelection.Clear(); }
             // After the input field has handled the arrow key itself (it moves the caret to the start).
             if (_caretToEnd == null)
                 return;
@@ -437,6 +478,14 @@ namespace ChatPlus
             else if (changed == TextSize)
             {
                 _resizeTextAt = Time.unscaledTime + RestyleDelay;
+            }
+            else if (changed == BackgroundOpacity)
+            {
+                ChatWindow.ApplyOpacity();
+            }
+            else if (changed == SelectText && !SelectText.Value)
+            {
+                ChatSelection.Clear();
             }
             else if (changed == RememberPosition)
             {
@@ -595,6 +644,7 @@ namespace ChatPlus
 
         void OnDestroy()
         {
+            ChatSelection.Clear();
             HiddenChatNotifications.Clear();
             Config.SettingChanged -= OnSettingChanged;
             if (_saveAt >= 0f)

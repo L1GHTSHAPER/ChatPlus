@@ -14,7 +14,7 @@ namespace ChatPlus
     }
 
     /// <summary>Texts of the settings window and of the mod's chat messages (English and Russian).</summary>
-    internal sealed class Lang
+    internal sealed partial class Lang
     {
         // Settings window
         public string Title;
@@ -49,6 +49,10 @@ namespace ChatPlus
         public string Width;
         public string Height;
         public string TextSize;
+        public string BackgroundOpacity;
+        public string BackgroundOpacityHint;
+        public string SelectText;
+        public string SelectTextHint;
         public string ResizeHandle;
         public string ResizeHint;
         public string RememberPosition;
@@ -129,6 +133,10 @@ namespace ChatPlus
             Width = "Width",
             Height = "Height",
             TextSize = "Text size",
+            BackgroundOpacity = "Background opacity",
+            BackgroundOpacityHint = "0%: transparent · 100%: original background. Text stays readable.",
+            SelectText = "Select chat text with the mouse",
+            SelectTextHint = "Left-drag to select, including across messages. Ctrl+C or right-click: copy. Escape: clear. Wheel: scroll.",
             ResizeHandle = "Resize handle on the chat",
             ResizeHint = "Drag the handle at the chat's top-right corner; double-click it for the normal size.",
             RememberPosition = "Remember where the chat was moved",
@@ -218,6 +226,10 @@ namespace ChatPlus
             Width = "Ширина",
             Height = "Высота",
             TextSize = "Размер текста",
+            BackgroundOpacity = "Непрозрачность фона",
+            BackgroundOpacityHint = "0% — прозрачный фон, 100% — обычный. Прозрачность текста не меняется.",
+            SelectText = "Выделять текст чата мышью",
+            SelectTextHint = "Тяните левой кнопкой, в том числе между сообщениями. Ctrl+C или ПКМ — копировать. Esc — снять выделение. Колёсико — прокрутка.",
             ResizeHandle = "Уголок для изменения размера",
             ResizeHint = "Тяните уголок в правом верхнем углу чата; двойной щелчок по нему — обычный размер.",
             RememberPosition = "Запоминать, куда перетащен чат",

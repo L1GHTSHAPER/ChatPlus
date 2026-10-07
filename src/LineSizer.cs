@@ -56,16 +56,17 @@ namespace ChatPlus
             _newestId = newestId;
             _version = Version;
             // After the setting went back to 100% every line is reset once; new lines then keep the game's size.
-            if (!resized && Percent == 100)
-                return;
-
             float size = TargetSize;
             int first = resized ? 0 : Math.Max(0, count - RecentLines);
             for (int i = first; i < count; i++)
             {
                 TMP_Text text = content.GetChild(i).GetComponent<TMP_Text>();
+                if (text != null && text.GetComponent<ChatLine>() == null)
+                    ChatLine.MakeSelectable(text);
                 if (text != null && Math.Abs(text.fontSize - size) > 0.01f)
-                    text.fontSize = size;
+                {
+                    if (resized || Percent != 100) text.fontSize = size;
+                }
             }
         }
     }

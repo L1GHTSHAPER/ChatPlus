@@ -35,6 +35,14 @@ namespace ChatPlus
         GameObject _blockerCanvas;
         RectTransform _blocker;
         float _confirmClearUntil;
+        readonly MessagePreview _messagePreview = new MessagePreview();
+        readonly Dictionary<ConfigEntry<string>, string> _colorDrafts = new Dictionary<ConfigEntry<string>, string>();
+        readonly Dictionary<ConfigEntry<string>, string> _colorValues = new Dictionary<ConfigEntry<string>, string>();
+        readonly HashSet<ConfigEntry<string>> _expandedColors = new HashSet<ConfigEntry<string>>();
+        string _editorDraft = string.Empty;
+        string _previewText;
+        Rect _previewBounds;
+        Rect _scrollBounds;
 
         public void Toggle()
         {
@@ -48,7 +56,9 @@ namespace ChatPlus
             enabled = open;
             if (open)
             {
+                ChatSelection.Clear();
                 Lang.Invalidate();
+                TMPDraftFromChat();
                 return;
             }
             // Closed with the hotkey while a slider is held: nothing would release the mouse otherwise, and other
@@ -66,6 +76,7 @@ namespace ChatPlus
 
         void OnDisable()
         {
+            _messagePreview.Hide();
             if (_blockerCanvas != null)
                 _blockerCanvas.SetActive(false);
         }
@@ -97,7 +108,13 @@ namespace ChatPlus
             GUI.matrix = previousMatrix;
 
             if (Event.current.type == EventType.Repaint)
+            {
                 UpdateBlocker(scale);
+                if (enabled && _previewText != null)
+                    _messagePreview.Show(_previewBounds, _scrollBounds, _previewText);
+                else
+                    _messagePreview.Hide();
+            }
         }
 
         void DrawWindow(int id)
@@ -124,6 +141,8 @@ namespace ChatPlus
             if (Event.current.type == EventType.Repaint)
                 _contentHeight = GUILayoutUtility.GetLastRect().height;
             GUILayout.EndScrollView();
+            if (Event.current.type == EventType.Repaint)
+                _scrollBounds = ScreenRect(GUILayoutUtility.GetLastRect());
 
             GUILayout.Space(10f);
             GUILayout.BeginHorizontal();
@@ -144,6 +163,8 @@ namespace ChatPlus
         void DrawSettings(Plugin plugin, Lang lang)
         {
             bool enabled = GUI.enabled;
+
+            DrawMessageEditor(plugin, lang);
 
             // Message time
             GUILayout.BeginVertical(_skin.Panel);
@@ -204,6 +225,8 @@ namespace ChatPlus
             IntRow(plugin.Width, lang.Width, Plugin.MinWidth, Plugin.MaxWidth, 5, "%");
             IntRow(plugin.Height, lang.Height, Plugin.MinHeight, Plugin.MaxHeight, 5, "%");
             IntRow(plugin.TextSize, lang.TextSize, Plugin.MinTextSize, Plugin.MaxTextSize, 5, "%");
+            IntRow(plugin.BackgroundOpacity, lang.BackgroundOpacity, 0, 100, 5, "%");
+            GUILayout.Label(lang.BackgroundOpacityHint, _skin.Hint);
             ToggleRow(plugin.ResizeHandle, lang.ResizeHandle);
             GUILayout.Label(lang.ResizeHint, _skin.Hint);
             ToggleRow(plugin.RememberPosition, lang.RememberPosition);
@@ -239,7 +262,150 @@ namespace ChatPlus
             GUI.enabled = enabled;
             ToggleRow(plugin.RecallSent, lang.RecallSent);
             ToggleRow(plugin.RightClickCopy, lang.RightClickCopy);
+            ToggleRow(plugin.SelectText, lang.SelectText);
+            GUILayout.Label(lang.SelectTextHint, _skin.Hint);
             GUILayout.EndVertical();
+        }
+
+        void TMPDraftFromChat()
+        {
+            var input = GameAccess.MessageInput;
+            if (input != null && !string.IsNullOrEmpty(input.text) && !ChatCommands.TryParse(input.text, out _))
+                _editorDraft = input.text;
+        }
+
+        void DrawMessageEditor(Plugin plugin, Lang lang)
+        {
+            bool enabled = GUI.enabled;
+            GUILayout.BeginVertical(_skin.Panel);
+            GUILayout.Label(lang.SectionOutgoing, _skin.SectionTitle);
+            ToggleRow(plugin.OutgoingEnabled, lang.OutgoingEnable);
+            GUI.enabled = enabled && plugin.OutgoingEnabled.Value;
+            MessageFont font = plugin.OutgoingFont.Value;
+            ChoiceRow(lang.OutgoingFont, font == MessageFont.LiberationSans ? "Liberation Sans" : lang.OutgoingDefaultFont,
+                step => plugin.OutgoingFont.Value = plugin.OutgoingFont.Value == MessageFont.GameDefault ? MessageFont.LiberationSans : MessageFont.GameDefault);
+            GUILayout.Label(font == MessageFont.LiberationSans ? lang.OutgoingFontHint : lang.OutgoingDefaultHint, _skin.Hint);
+            int mode = Mathf.Clamp((int)plugin.OutgoingColorMode.Value, 0, 2);
+            ChoiceRow(lang.OutgoingColorMode, lang.OutgoingColorModes[mode],
+                step => plugin.OutgoingColorMode.Value = (MessageColorMode)((mode + step + 3) % 3));
+            if (mode != 0)
+                EditableColorRow(mode == 2 ? lang.OutgoingStartColor : lang.TimeColor, plugin.OutgoingColor, lang);
+            if (mode == 2)
+                EditableColorRow(lang.OutgoingEndColor, plugin.OutgoingEndColor, lang);
+            ToggleRow(plugin.OutgoingBold, lang.OutgoingBold);
+            ToggleRow(plugin.OutgoingItalic, lang.OutgoingItalic);
+            GUI.enabled = enabled;
+            GUILayout.Label(lang.OutgoingDraft, _skin.Label);
+            _editorDraft = GUILayout.TextArea(_editorDraft, 1000, _skin.EditorInput, GUILayout.Height(54f));
+            bool fits = OutgoingFormat.TryCompose(_editorDraft, plugin.BuildOutgoingStyle(), out string wire);
+            if (!plugin.OutgoingEnabled.Value && _editorDraft.Length > OutgoingFormat.WireLimit)
+                fits = false;
+            GUILayout.Label(fits ? string.Format(lang.OutgoingBudget, wire.Length, OutgoingFormat.WireLimit) : lang.OutgoingTooLong, _skin.Hint);
+            GUILayout.Label(lang.OutgoingPreview, _skin.Label);
+            Rect preview = GUILayoutUtility.GetRect(10f, 64f, GUILayout.ExpandWidth(true));
+            GUI.Box(preview, GUIContent.none, _skin.Panel);
+            if (Event.current.type == EventType.Repaint)
+            {
+                _previewBounds = ScreenRect(new Rect(preview.x + 8f, preview.y + 4f, preview.width - 16f, preview.height - 8f));
+                string sample = string.IsNullOrEmpty(_editorDraft) ? lang.OutgoingSample : _editorDraft;
+                if (!OutgoingFormat.TryCompose(sample, plugin.BuildOutgoingStyle(), out _previewText))
+                    _previewText = "<noparse>" + sample + "</noparse>";
+            }
+            GUILayout.BeginHorizontal();
+            GUI.enabled = enabled && fits && !string.IsNullOrWhiteSpace(_editorDraft) && GameAccess.MessageInput != null;
+            if (GUILayout.Button(lang.OutgoingInsert, _skin.Button))
+            {
+                var input = GameAccess.MessageInput;
+                input.text = _editorDraft;
+                SetOpen(false);
+                input.ActivateInputField();
+                input.MoveTextEnd(false);
+            }
+            GUI.enabled = enabled;
+            if (GUILayout.Button(lang.OutgoingReset, _skin.Button))
+            {
+                plugin.OutgoingEnabled.Value = false;
+                plugin.OutgoingFont.Value = MessageFont.GameDefault;
+                plugin.OutgoingColorMode.Value = MessageColorMode.Original;
+                plugin.OutgoingColor.Value = "#F2C46D";
+                plugin.OutgoingEndColor.Value = "#6AA8FF";
+                plugin.OutgoingBold.Value = false;
+                plugin.OutgoingItalic.Value = false;
+                _colorDrafts.Clear();
+                _colorValues.Clear();
+            }
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
+            GUILayout.Label(lang.OutgoingHint, _skin.Hint);
+            GUILayout.EndVertical();
+        }
+
+        void EditableColorRow(string label, ConfigEntry<string> entry, Lang lang)
+        {
+            bool expanded = _expandedColors.Contains(entry);
+            if (!_colorDrafts.TryGetValue(entry, out string draft) || !_colorValues.TryGetValue(entry, out string last) || last != entry.Value)
+                draft = entry.Value;
+            if (!OutgoingFormat.TryColor(entry.Value, out string actual)) actual = "#F2C46D";
+            GUILayout.BeginHorizontal(_skin.Row);
+            GUILayout.Label(label, _skin.Label, GUILayout.Width(LabelWidth));
+            int step = GUILayout.Button("◄", _skin.SmallButton, GUILayout.Width(ArrowWidth)) ? -1 : 0;
+            string next = GUILayout.TextField(draft, 9, _skin.EditorHex, Shrinkable);
+            if (GUILayout.Button("►", _skin.SmallButton, GUILayout.Width(ArrowWidth))) step = 1;
+            if (ColorUtility.TryParseHtmlString(actual, out Color color))
+            {
+                Color previous = GUI.backgroundColor;
+                GUI.backgroundColor = color;
+                if (GUILayout.Button(GUIContent.none, _skin.ColorButton))
+                {
+                    if (!_expandedColors.Add(entry)) _expandedColors.Remove(entry);
+                }
+                GUI.backgroundColor = previous;
+            }
+            GUILayout.EndHorizontal();
+            bool valid = (next.StartsWith("#", StringComparison.Ordinal) ? next.Length == 7 : next.Length == 6) && OutgoingFormat.TryColor(next, out _);
+            if (step != 0)
+            {
+                entry.Value = Presets.Step(Presets.MessageColors, entry.Value, step, true);
+                next = entry.Value;
+                valid = true;
+            }
+            else if (valid && OutgoingFormat.TryColor(next, out string normalized))
+                entry.Value = normalized;
+            _colorDrafts[entry] = next;
+            _colorValues[entry] = entry.Value;
+            GUILayout.Label(valid ? lang.OutgoingColorHint : lang.OutgoingInvalidColor, _skin.Hint);
+            if (expanded)
+            {
+                int rgb = Convert.ToInt32(actual.Substring(1), 16);
+                int r = ColorChannel("R", (rgb >> 16) & 255);
+                int g = ColorChannel("G", (rgb >> 8) & 255);
+                int b = ColorChannel("B", rgb & 255);
+                string changed = "#" + ((r << 16) | (g << 8) | b).ToString("X6");
+                if (((r << 16) | (g << 8) | b) != rgb)
+                {
+                    entry.Value = changed;
+                    _colorDrafts[entry] = changed;
+                    _colorValues[entry] = changed;
+                }
+            }
+        }
+
+        int ColorChannel(string label, int value)
+        {
+            GUILayout.BeginHorizontal(_skin.Row);
+            GUILayout.Space(LabelWidth - 26f);
+            GUILayout.Label(label, _skin.Label, GUILayout.Width(26f));
+            int next = Mathf.RoundToInt(GUILayout.HorizontalSlider(value, 0f, 255f, _skin.Slider, _skin.Thumb));
+            GUILayout.Label(next.ToString(), _skin.Value, GUILayout.Width(ValueWidth));
+            GUILayout.EndHorizontal();
+            return next;
+        }
+
+        static Rect ScreenRect(Rect rect)
+        {
+            Vector2 start = GUIUtility.GUIToScreenPoint(rect.min);
+            Vector2 end = GUIUtility.GUIToScreenPoint(rect.max);
+            return new Rect(start, end - start);
         }
 
         void ToggleRow(ConfigEntry<bool> entry, string label, float indent = 0f)
@@ -342,6 +508,7 @@ namespace ChatPlus
 
         void OnDestroy()
         {
+            _messagePreview.Destroy();
             if (_skin != null)
                 _skin.Destroy();
             if (_blockerCanvas != null)

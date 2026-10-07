@@ -10,6 +10,7 @@ namespace ChatPlus
         // Parallel to Lang.ColorNames: Soft, Gray, Gold, Sky, Mint, Rose, White.
         public static readonly string[] TimeColors = { "#F5EDE1A6", "#B9AFA8", "#F2C46D", "#8EC5FF", "#8FD6B5", "#F4A6B8", "#FFFFFF" };
         public static readonly string[] HighlightColors = { "#F5EDE1", "#B9AFA8", "#F2C46D", "#8EC5FF", "#8FD6B5", "#F4A6B8", "#FFFFFF" };
+        public static readonly string[] MessageColors = { "#F2C46D", "#6AA8FF", "#8FD6B5", "#F4A6B8", "#BD9BFF", "#FFFFFF", "#FF8C69" };
 
         public const string DefaultTimeColor = "#F5EDE1A6";
         public const string DefaultHighlightColor = "#F2C46D";

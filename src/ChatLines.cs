@@ -241,6 +241,7 @@ namespace ChatPlus
         /// <summary>Draws all lines again after a setting that changes their look was changed.</summary>
         internal static void RenderAll()
         {
+            ChatSelection.Clear();
             UIManager ui = GameAccess.UI;
             if (ui == null)
                 return;
@@ -259,6 +260,7 @@ namespace ChatPlus
         /// <summary>Removes every line from both chat tabs (the history is kept).</summary>
         internal static int Clear()
         {
+            ChatSelection.Clear();
             TextChannelManager chat = GameAccess.Chat;
             int removed = 0;
             for (int tab = 0; tab < 2; tab++)
