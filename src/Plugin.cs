@@ -18,7 +18,7 @@ namespace ChatPlus
     {
         public const string PluginGuid = "ontogether.chatplus";
         public const string PluginName = "ChatPlus";
-        public const string PluginVersion = "1.3.0";
+        public const string PluginVersion = "1.3.1";
 
         internal const int MinWidth = 70;
         internal const int MaxWidth = 300;
@@ -230,7 +230,8 @@ namespace ChatPlus
             RightClickCopy = Config.Bind("Extras", "RightClickCopies", true,
                 "A right click copies the selection on that message, or the whole message when nothing is selected.");
             SelectText = Config.Bind("Extras", "SelectText", true,
-                "Drag with the left mouse button to select chat text, including across messages. Ctrl+C copies; Escape clears. Mouse wheel scrolls.");
+                "Hold Shift before dragging with the left mouse button to select chat text, including across messages. " +
+                "A normal left drag or touch swipe scrolls. Ctrl+C copies; Escape clears. The gesture mode is fixed when pressed.");
 
             OutgoingEnabled = Config.Bind("Outgoing", "Enabled", false,
                 "Format messages you send using standard tags visible on unmodified clients. Commands and manually tagged messages are left alone.");

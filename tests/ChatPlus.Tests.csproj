@@ -21,6 +21,8 @@
     <Compile Include="..\src\HiddenMessageCounts.cs" Link="Mod\HiddenMessageCounts.cs" />
     <Compile Include="..\src\TextUtil.cs" Link="Mod\TextUtil.cs" />
     <Compile Include="..\src\SelectionText.cs" Link="Mod\SelectionText.cs" />
+    <!-- The real pointer handler is exercised with narrow Unity/TMP test doubles in DragRouting.cs. -->
+    <Compile Include="..\src\ChatLine.cs" Link="Mod\ChatLine.cs" />
   </ItemGroup>
 
 </Project>

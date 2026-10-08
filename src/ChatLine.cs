@@ -10,11 +10,13 @@ namespace ChatPlus
     /// a setting changes, and supports mouse selection and copying.
     /// </summary>
     internal sealed class ChatLine : MonoBehaviour, IPointerClickHandler, IPointerDownHandler,
-        IBeginDragHandler, IDragHandler, IEndDragHandler
+        IInitializePotentialDragHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
     {
         internal ChatEntry Entry;
         TMP_Text _text;
         UnityEngine.UI.ScrollRect _scroll;
+        bool _selecting;
+        PointerEventData _dragEvent;
 
         internal static ChatLine MakeSelectable(TMP_Text text)
         {
@@ -63,23 +65,43 @@ namespace ChatPlus
 
         public void OnPointerDown(PointerEventData eventData)
         {
-            if (eventData != null) ChatSelection.Begin(_text, eventData);
+            if (eventData == null || eventData.button != PointerEventData.InputButton.Left) return;
+            StopDrag();
+            _scroll = GetComponentInParent<UnityEngine.UI.ScrollRect>();
+            // Choose once at the press. Releasing Shift or pressing it during a swipe must not change its owner.
+            // Touch gestures always keep the native scrolling behavior.
+            _selecting = ChatSelection.Enabled && eventData.pointerId < 0 &&
+                (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift));
+            if (_selecting)
+                ChatSelection.Begin(_text, eventData);
+            else
+                ChatSelection.Clear();
+        }
+
+        public void OnInitializePotentialDrag(PointerEventData eventData)
+        {
+            // ScrollRect normally receives this before a drag and stops its previous inertia.
+            // Our IDragHandler makes this line the event target, so forward that phase too.
+            if (_scroll == null) _scroll = GetComponentInParent<UnityEngine.UI.ScrollRect>();
+            _scroll?.OnInitializePotentialDrag(eventData);
         }
 
         public void OnBeginDrag(PointerEventData eventData)
         {
-            if (ChatSelection.Enabled && eventData.button == PointerEventData.InputButton.Left)
-                ChatSelection.BeginDrag(_text, eventData);
-            else
-            {
-                _scroll = GetComponentInParent<UnityEngine.UI.ScrollRect>();
+            if (eventData == null || eventData.button != PointerEventData.InputButton.Left) return;
+            // The Button and this drag handler share a GameObject: Unity otherwise leaves it eligible for a click
+            // after dragging, which opens a player card when the user only wanted to scroll.
+            eventData.eligibleForClick = false;
+            _dragEvent = eventData;
+            _selecting = _selecting && ChatSelection.BeginDrag(_text, eventData);
+            if (!_selecting)
                 _scroll?.OnBeginDrag(eventData);
-            }
         }
 
         public void OnDrag(PointerEventData eventData)
         {
-            if (ChatSelection.Enabled && eventData.button == PointerEventData.InputButton.Left)
+            if (_dragEvent == null) return;
+            if (_selecting)
                 ChatSelection.Drag(eventData);
             else
                 _scroll?.OnDrag(eventData);
@@ -87,9 +109,28 @@ namespace ChatPlus
 
         public void OnEndDrag(PointerEventData eventData)
         {
-            ChatSelection.EndDrag(eventData);
-            _scroll?.OnEndDrag(eventData);
+            if (_dragEvent == null) return;
+            _dragEvent = eventData;
+            StopDrag();
+        }
+
+        void StopDrag()
+        {
+            if (_dragEvent != null)
+            {
+                if (_selecting) ChatSelection.EndDrag(_dragEvent);
+                else _scroll?.OnEndDrag(_dragEvent);
+            }
+            _dragEvent = null;
+            _selecting = false;
             _scroll = null;
+        }
+
+        void OnDisable()
+        {
+            bool selecting = _selecting;
+            StopDrag();
+            if (selecting) ChatSelection.Clear();
         }
     }
 }

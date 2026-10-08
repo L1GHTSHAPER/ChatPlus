@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.1
+
+- Restored native chat scrolling by holding the left mouse button and dragging, including when starting on message text. Touch swipes also scroll.
+- Text selection now uses Shift + left-drag: hold Shift before pressing the mouse button. The mode stays fixed throughout the gesture, even if Shift is released or pressed while dragging.
+- Forwarded the complete scroll drag lifecycle, including initialization to stop previous inertia. Dragging no longer opens a player's card on release; an ordinary click still does.
+- Updated English/Russian settings hints and usage instructions.
+
 ## 1.3.0
 
 - Select parts of chat text by dragging with the left mouse button, including across messages and wrapped lines. Ctrl+C copies the selection; Escape or an outside click clears it. The mouse wheel scrolls, and dragging beyond the viewport scrolls the selection.

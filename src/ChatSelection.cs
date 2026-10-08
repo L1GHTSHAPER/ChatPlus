@@ -38,9 +38,9 @@ namespace ChatPlus
             _scroll = text.GetComponentInParent<ScrollRect>();
         }
 
-        internal static void BeginDrag(TMP_Text text, PointerEventData pointer)
+        internal static bool BeginDrag(TMP_Text text, PointerEventData pointer)
         {
-            if (!Enabled || text != _anchor || pointer.button != PointerEventData.InputButton.Left) return;
+            if (!Enabled || text != _anchor || pointer.button != PointerEventData.InputButton.Left) return false;
             _dragging = true;
             pointer.eligibleForClick = false;
             if (_scroll != null) _scroll.StopMovement();
@@ -48,6 +48,7 @@ namespace ChatPlus
             _heldUi = GameAccess.UI;
             GameAccess.SetPanelHeld(_heldUi, true);
             Drag(pointer);
+            return true;
         }
 
         internal static void Drag(PointerEventData pointer)

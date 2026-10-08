@@ -17,7 +17,7 @@ A BepInEx mod for [On Together](https://store.steampowered.com/app/2688490/On_To
 - **Separate counters while the chat is collapsed:** Global (`G`, or `Г` in Russian) and Local (`L` / `Л`), each independently shown or hidden in the settings. Both are enabled by default and reset when you expand the chat. Each counts received player messages up to 99; your messages, restored history and game notifications do not count. Hiding a counter keeps its count until you expand the chat or leave the lobby.
 - **Mention highlight:** messages with your name or your keywords are highlighted.
 - **Up / Down** in the empty input field bring back the messages and commands you sent before.
-- **Select and copy text:** drag with the left mouse button, within a message or across multiple messages, then press **Ctrl+C**. **Escape** or a click elsewhere clears the selection. The mouse wheel scrolls; dragging beyond the message viewport scrolls too. An ordinary click still opens the player's card.
+- **Select and copy text:** hold **Shift**, then drag with the left mouse button, within a message or across multiple messages, and press **Ctrl+C**. **Escape** or a click elsewhere clears the selection. An ordinary left-button drag or touch swipe scrolls the chat; the mouse wheel also scrolls. The gesture mode is fixed when you press, so changing Shift during a drag does not switch actions. Dragging a selection beyond the viewport scrolls too. An ordinary click still opens the player's card; a swipe does not.
 - **Right-click** within the selection to copy it, or right-click another message to copy its whole text.
 - **Background opacity:** set it from 0% (transparent) to 100% (the original background), separately from the text size. Text and controls keep their opacity.
 - In-game settings window (**F3** or `/chatplus`); the same settings are in the mod manager's config editor, and edits made there apply while the game is running.
@@ -34,7 +34,8 @@ A BepInEx mod for [On Together](https://store.steampowered.com/app/2688490/On_To
 | Size from the chat | `/chatplus size 150 120` (width and height in %), `/chatplus size reset` |
 | Text size | `/chatplus text 120` |
 | Background opacity | **F3 → Chat window → Background opacity** (0–100%) |
-| Select / copy text | left-drag, then **Ctrl+C** or right-click within the selection; **Escape** clears |
+| Scroll the chat | left-button drag / swipe, or mouse wheel |
+| Select / copy text | hold **Shift** before left-dragging, then **Ctrl+C** or right-click within the selection; **Escape** clears |
 | Message time | `/chatplus time on`, `/chatplus time off`, `/chatplus time format HH:mm:ss` |
 | Lines kept in the chat | `/chatplus lines 300 150` (Global, Local) |
 | Clear the chat | `/chatplus clear` (the history keeps the lines) |
@@ -86,7 +87,7 @@ A BepInEx mod for [On Together](https://store.steampowered.com/app/2688490/On_To
 | Extras | `Keywords` | *(empty)* | More words that highlight a message, separated by commas. |
 | Extras | `RecallSentMessages` | `true` | Up / Down in the empty input field bring back sent messages. |
 | Extras | `RightClickCopies` | `true` | A right click copies the selection on that message, or the whole message without a selection. |
-| Extras | `SelectText` | `true` | Left-drag selects text across messages; Ctrl+C copies, Escape clears. Disable to restore dragging the scroll view from messages. |
+| Extras | `SelectText` | `true` | Shift + left-drag selects text across messages; Ctrl+C copies, Escape clears. Normal dragging and touch swipes always scroll. Disable to turn off selection. |
 
 ## Files
 

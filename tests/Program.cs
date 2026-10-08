@@ -40,6 +40,7 @@ namespace ChatPlus.Tests
             PresetTests();
             ChatHistoryTests();
             SelectionTextTests();
+            DragRoutingTests.Run(Check);
             Console.WriteLine($"{_passes} passed, {_failures} failed");
             return _failures == 0 ? 0 : 1;
         }
