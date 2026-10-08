@@ -74,6 +74,7 @@ namespace ChatPlus
                 SpriteMeshType.FullRect, new Vector4(12f, 12f, 12f, 12f));
             _buttonImage.sprite = _sprite;
             _buttonImage.type = Image.Type.Sliced;
+            BackgroundOpacity.Attach(_buttonImage);
             _button = buttonObject.GetComponent<Button>();
             _button.targetGraphic = _buttonImage;
             _button.navigation = new Navigation { mode = Navigation.Mode.None };
@@ -89,6 +90,7 @@ namespace ChatPlus
             _gearImage = gearObject.GetComponent<Image>();
             _gearImage.sprite = _gearSprite;
             _gearImage.raycastTarget = false;
+            BackgroundOpacity.Attach(_gearImage);
             buttonObject.AddComponent<SettingsButtonHint>();
 
             // Reserve space above messages; the input and the native move handle keep their original layout.

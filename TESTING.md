@@ -1,6 +1,6 @@
-# ChatPlus 1.4.0 — UI validation
+# ChatPlus 1.4.1 — UI validation
 
-The user approved the release after testing local revision 4 on October 8, 2026. The release also gives the preview output a 24-bit depth buffer to address URP Render Graph warnings observed in that session. The checklist below is retained for future UI regressions; it does not imply every resolution or lobby scenario has been exercised.
+Version 1.4.0 was released after user testing. Version 1.4.1 applies opacity to the settings button, gear icon and resize handle. On October 8, 2026, the user explicitly approved publishing this fix without an additional in-game test. The checklist is retained for future UI regressions; it does not imply every resolution or lobby scenario has been exercised.
 
 ## Install
 
@@ -9,8 +9,8 @@ Close On-Together normally before replacing the plugin. Install only one ChatPlu
 ## In-game checks
 
 - Open F3 and use the new chat settings button. Both should open the cream/coral settings window. Check all four tabs, the close button, window dragging, repeated reopening, and the Russian/English labels.
-- Under Appearance, move text size from 60% through 100% to 200%, and background opacity from 0% to 100%. The sample and real chat should update; the text and settings button should remain readable when the chat background is transparent. Restore the preferred values afterwards.
-- At exactly 0% opacity, verify the frame, chat underlay, input background and World/Local tab fills and borders disappear. Text and the settings gear remain usable. Repeat with off-screen line culling disabled to check the stencil mask still shows messages.
+- Under Appearance, move text size from 60% through 100% to 200%, and background opacity through 0%, 50% and 100%. The real chat, settings button including its gear, and resize handle should update immediately and restore their original alpha at 100%. Chat text and selection highlighting retain their opacity. Restore the preferred values afterwards.
+- At exactly 0% opacity, verify the frame, chat underlay, input background, World/Local tab fills and borders, settings button and resize handle disappear. The controls' hit areas remain usable while the native chat is active; F3 also opens settings. Repeat with off-screen line culling disabled to check the stencil mask still shows messages.
 - Expand time and window controls. Check that all prior options are present, advanced settings scroll on a small screen, and switching tabs preserves each tab's scroll position. Check 720p and 1080p if available.
 - In the chat, drag with the left mouse button starting on a message. It should scroll without opening a player card. Hold Shift before pressing the left mouse button to select across wrapped lines/messages; releasing Shift during selection must keep selecting. Ctrl+C and right-click should copy the selection. A plain click should still open a player card.
 - Let the chat fade, then start Shift + drag on the first press that activates it. Font-outline refresh must not cancel selection. Also start a selection after focusing the input; the unsent draft must remain intact.

@@ -125,7 +125,7 @@ namespace ChatPlus
                 ChatChrome.Attach(root, nativeFrame, globalScroll, localScroll);
                 _chrome = root.GetComponent<ChatChrome>();
             }
-            // Include native tab backgrounds, shadows and input decoration, but preserve our interactive controls.
+            // Include native decoration. Our buttons opt in at creation; other custom images (e.g. selection) stay intact.
             foreach (Image image in root.GetComponentsInChildren<Image>(true))
             {
                 bool custom = false;
@@ -515,6 +515,7 @@ namespace ChatPlus
 
             Image image = grip.AddComponent<Image>();
             image.sprite = GripSprite();
+            BackgroundOpacity.Attach(image);
             image.raycastTarget = true;
             // The game fades the panel's images in and out; the handle joins them.
             List<Image> images = GameAccess.PanelImages(ui);

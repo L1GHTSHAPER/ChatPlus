@@ -18,7 +18,7 @@ namespace ChatPlus
     {
         public const string PluginGuid = "ontogether.chatplus";
         public const string PluginName = "ChatPlus";
-        public const string PluginVersion = "1.4.0";
+        public const string PluginVersion = "1.4.1";
 
         internal const int MinWidth = 70;
         internal const int MaxWidth = 300;
@@ -198,7 +198,7 @@ namespace ChatPlus
             TextSize = Config.Bind("Window", "TextSize", 100,
                 new ConfigDescription("Size of the chat text, in percent of the game's size.", new AcceptableValueRange<int>(MinTextSize, MaxTextSize)));
             BackgroundOpacity = Config.Bind("Window", "BackgroundOpacity", 100,
-                new ConfigDescription("Chat background opacity in percent: 0 = transparent, 100 = the game's background. Text is unaffected.",
+                new ConfigDescription("Chat background and ChatPlus button opacity in percent: 0 = transparent, 100 = original opacity. Text is unaffected.",
                     new AcceptableValueRange<int>(0, 100)));
             ResizeHandle = Config.Bind("Window", "ResizeHandle", true,
                 "Show a handle at the top-right corner of the chat (while the chat is active) to resize it with the mouse. " +

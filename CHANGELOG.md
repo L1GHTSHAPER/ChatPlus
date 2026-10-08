@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.1
+
+- Applied the chat opacity setting to ChatPlus's settings button, gear icon and resize handle. Their opacity now follows the same slider and native chat fade; message text and selection highlighting are unchanged.
+
 ## 1.4.0
 
 - Redesigned F3 in the game's cream/coral style with Appearance, Messages, History and Controls tabs, live previews, and collapsible advanced controls. Settings still save automatically.
