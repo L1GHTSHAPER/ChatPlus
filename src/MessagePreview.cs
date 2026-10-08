@@ -63,13 +63,19 @@ namespace ChatPlus
         internal void RenderPending()
         {
             if (_failed) return;
-            try { _requests.RenderLatest(Rasterize); }
+            object previous = AppDomain.CurrentDomain.GetData("LightShaper.PreviewRendering.v1");
+            try
+            {
+                AppDomain.CurrentDomain.SetData("LightShaper.PreviewRendering.v1", true);
+                _requests.RenderLatest(Rasterize);
+            }
             catch (Exception error)
             {
                 _failed = true;
                 Hide();
                 Plugin.LogError("Could not render message preview: ", error);
             }
+            finally { AppDomain.CurrentDomain.SetData("LightShaper.PreviewRendering.v1", previous); }
         }
 
         void Rasterize(PreviewRequest request)

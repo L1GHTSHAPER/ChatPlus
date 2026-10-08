@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.4.2
+
+- Cream panels, warm brown text, coral accents, rounded controls and game fonts.
+- Grouped square side buttons with brown outlines, proportionate icons and name/hotkey hints. Buttons avoid open panels and hide with game controls in Desktop mode.
+- Responsive settings menus, tabs and collapsible advanced options. Existing configuration keys, commands and English/Russian support are preserved.
+- Input guards keep menu editing and scrolling from moving the player or camera.
+- Updated menu instructions and direct support links for this mod on Thunderstore and GitHub.
+- Preview rendering remains deferred outside OnGUI, with a shared reentry guard and the URP depth buffer. Chat controls continue to follow chat opacity.
+
 ## 1.4.1
 
 - Applied the chat opacity setting to ChatPlus's settings button, gear icon and resize handle. Their opacity now follows the same slider and native chat fade; message text and selection highlighting are unchanged.

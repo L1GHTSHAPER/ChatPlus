@@ -24,6 +24,8 @@ namespace ChatPlus
         static readonly GUILayoutOption[] Shrinkable = { GUILayout.MinWidth(40f), GUILayout.ExpandWidth(true) };
 
         UiSkin _skin;
+        GUISkin _guiSkin;
+        WindowInputShield _shield;
         GUI.WindowFunction _drawWindow;
         Rect _rect;
         bool _placed;
@@ -37,8 +39,6 @@ namespace ChatPlus
         bool _previewDrawn;
         // The IMGUI control of this window that holds the mouse (slider or window drag), released on close.
         int _hotControl;
-        GameObject _blockerCanvas;
-        RectTransform _blocker;
         float _confirmClearUntil;
         readonly MessagePreview _messagePreview = new MessagePreview();
         readonly Dictionary<ConfigEntry<string>, string> _colorDrafts = new Dictionary<ConfigEntry<string>, string>();
@@ -56,6 +56,8 @@ namespace ChatPlus
             if (open == enabled)
                 return;
             enabled = open;
+            if (_shield == null) _shield = new WindowInputShield("ChatPlus");
+            _shield.Set(open);
             if (open)
             {
                 ChatSelection.Clear();
@@ -70,17 +72,10 @@ namespace ChatPlus
             _hotControl = 0;
         }
 
-        void OnEnable()
-        {
-            if (_blockerCanvas != null)
-                _blockerCanvas.SetActive(true);
-        }
-
         void OnDisable()
         {
+            _shield?.Set(false);
             _messagePreview.Hide();
-            if (_blockerCanvas != null)
-                _blockerCanvas.SetActive(false);
         }
 
         void LateUpdate()
@@ -91,16 +86,20 @@ namespace ChatPlus
         void OnGUI()
         {
             // A manual preview render can invoke GUI callbacks; never draw or queue F3 inside it.
-            if (_messagePreview.Rendering || Plugin.Instance == null)
+            if (_messagePreview.Rendering || UiEnvironment.PreviewRendering || Plugin.Instance == null)
                 return;
             if (_skin == null)
-                _skin = new UiSkin();
+            { _skin = new UiSkin(); _guiSkin = _skin.CreateGuiSkin(GUI.skin); }
             if (_drawWindow == null)
                 _drawWindow = DrawWindow;
 
             // Keep the window the same physical size on high resolutions (laid out for 1080p).
-            float scale = Mathf.Clamp(Screen.height / 1080f, 1f, 3f);
+            float scale = UiEnvironment.Scale;
             Matrix4x4 previousMatrix = GUI.matrix;
+            GUISkin previousSkin = GUI.skin;
+            try
+            {
+            GUI.skin = _guiSkin;
             GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, 1f));
             float screenWidth = Screen.width / scale;
             _screenHeight = Screen.height / scale;
@@ -116,11 +115,12 @@ namespace ChatPlus
             _rect = GUILayout.Window(WindowId, _rect, _drawWindow, GUIContent.none, _skin.Window, GUILayout.Width(windowWidth));
             _rect.x = Mathf.Clamp(_rect.x, 0f, Mathf.Max(0f, screenWidth - _rect.width));
             _rect.y = Mathf.Clamp(_rect.y, 0f, Mathf.Max(0f, _screenHeight - _rect.height));
-            GUI.matrix = previousMatrix;
+            }
+            finally { GUI.matrix = previousMatrix; GUI.skin = previousSkin; }
 
             if (Event.current.type == EventType.Repaint)
             {
-                UpdateBlocker(scale);
+                _shield?.Place(_rect, scale);
                 if (!enabled || !_previewDrawn) _messagePreview.Hide();
             }
         }
@@ -169,7 +169,7 @@ namespace ChatPlus
             GUILayout.BeginHorizontal();
             GUILayout.Label(lang.AutoSaved, _skin.Hint);
             GUILayout.FlexibleSpace();
-            GUILayout.Label("LightShaper · local test", _skin.Hint);
+            GUILayout.Label("LightShaper", _skin.Hint);
             GUILayout.EndHorizontal();
 
             GUI.DragWindow(new Rect(0f, 0f, 10000f, 66f));
@@ -584,44 +584,13 @@ namespace ChatPlus
                 entry.Value = Presets.Step(presets, entry.Value, step, true);
         }
 
-        /// <summary>
-        /// An invisible uGUI panel under the window keeps clicks on the window from also reaching game buttons
-        /// behind it (IMGUI does not block uGUI by itself).
-        /// </summary>
-        void UpdateBlocker(float scale)
-        {
-            if (_blocker == null)
-            {
-                if (_blockerCanvas != null)
-                    Destroy(_blockerCanvas);
-                _blockerCanvas = new GameObject("ChatPlus.InputBlocker") { hideFlags = HideFlags.HideAndDontSave };
-                DontDestroyOnLoad(_blockerCanvas);
-                Canvas canvas = _blockerCanvas.AddComponent<Canvas>();
-                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-                canvas.sortingOrder = short.MaxValue;
-                _blockerCanvas.AddComponent<GraphicRaycaster>();
-
-                var panel = new GameObject("Blocker", typeof(RectTransform)) { hideFlags = HideFlags.HideAndDontSave };
-                panel.transform.SetParent(_blockerCanvas.transform, false);
-                Image image = panel.AddComponent<Image>();
-                image.color = new Color(0f, 0f, 0f, 0f);
-                image.raycastTarget = true;
-                _blocker = (RectTransform)panel.transform;
-                _blocker.anchorMin = new Vector2(0f, 1f);
-                _blocker.anchorMax = new Vector2(0f, 1f);
-                _blocker.pivot = new Vector2(0f, 1f);
-            }
-            _blocker.anchoredPosition = new Vector2(_rect.x * scale, -_rect.y * scale);
-            _blocker.sizeDelta = new Vector2(_rect.width * scale, _rect.height * scale);
-        }
-
         void OnDestroy()
         {
+            _shield?.Dispose();
+            if (_guiSkin != null) Destroy(_guiSkin);
             _messagePreview.Destroy();
             if (_skin != null)
                 _skin.Destroy();
-            if (_blockerCanvas != null)
-                Destroy(_blockerCanvas);
         }
     }
 }

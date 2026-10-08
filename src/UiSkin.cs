@@ -204,7 +204,7 @@ namespace ChatPlus
             Thumb.active.background = thumbHover;
 
             // Prefer the game's font when its source is available; baked TMP assets may have no source Font.
-            Font font = GameAccess.TextPrefab(GameAccess.Chat)?.font?.sourceFontFile;
+            Font font = UiEnvironment.GameFont;
             if (font != null)
                 foreach (GUIStyle style in new[] { Title, Subtitle, Label, ToggleLabel, SectionTitle, Value, Field,
                     EditorInput, EditorHex, Hint, Button, SmallButton, Tab, SelectedTab, CloseButton, Logo })
@@ -219,6 +219,34 @@ namespace ChatPlus
                     UnityEngine.Object.Destroy(texture);
             }
             _textures.Clear();
+        }
+
+        internal GUISkin CreateGuiSkin(GUISkin source)
+        {
+            var skin = UnityEngine.Object.Instantiate(source);
+            skin.hideFlags = HideFlags.HideAndDontSave;
+            skin.label = new GUIStyle(Label);
+            skin.button = new GUIStyle(Button) { stretchWidth = true, margin = new RectOffset(2,2,3,3) };
+            skin.box = new GUIStyle(Panel);
+            skin.textField = new GUIStyle(EditorHex);
+            skin.textArea = new GUIStyle(EditorInput);
+            skin.toggle = new GUIStyle(source.toggle);
+            skin.toggle.normal.textColor = skin.toggle.onNormal.textColor = TextColor;
+            skin.toggle.font = UiEnvironment.GameFont;
+            skin.toggle.wordWrap = true;
+            skin.horizontalSlider = new GUIStyle(Slider);
+            skin.horizontalSliderThumb = new GUIStyle(Thumb);
+            skin.verticalScrollbar = new GUIStyle { fixedWidth=12, border=new RectOffset(4,4,4,4) };
+            skin.verticalScrollbar.normal.background = Box(16,16,6,FieldColor,PanelBorder);
+            skin.verticalScrollbarThumb = new GUIStyle { border=new RectOffset(4,4,4,4), fixedWidth=12, padding=new RectOffset(0,0,8,8) };
+            skin.verticalScrollbarThumb.normal.background = Box(16,16,6,ButtonActive,ButtonBorder);
+            skin.verticalScrollbarThumb.hover.background = Box(16,16,6,ButtonHover,AccentColor);
+            skin.verticalScrollbarThumb.active.background = skin.verticalScrollbarThumb.hover.background;
+            skin.verticalScrollbarUpButton = new GUIStyle { fixedHeight=0, fixedWidth=0 };
+            skin.verticalScrollbarDownButton = new GUIStyle { fixedHeight=0, fixedWidth=0 };
+            skin.settings.selectionColor = Rgb(0xF2CCAF,.8f);
+            skin.settings.cursorColor = TextColor;
+            return skin;
         }
 
         static Color Rgb(int rgb, float alpha = 1f)

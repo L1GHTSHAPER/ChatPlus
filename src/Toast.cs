@@ -14,7 +14,7 @@ namespace ChatPlus
         float _until;
         Vector2 _mouse;
         GUIStyle _style;
-        Texture2D _background;
+        UiSkin _skin;
 
         internal static void Show(string text)
         {
@@ -34,6 +34,7 @@ namespace ChatPlus
 
         void OnGUI()
         {
+            if (UiEnvironment.PreviewRendering) return;
             float left = _until - Time.unscaledTime;
             if (left <= 0f || string.IsNullOrEmpty(_text))
             {
@@ -42,21 +43,18 @@ namespace ChatPlus
             }
             if (_style == null)
             {
-                _background = new Texture2D(1, 1, TextureFormat.RGBA32, false) { hideFlags = HideFlags.HideAndDontSave };
-                _background.SetPixel(0, 0, new Color(0.09f, 0.106f, 0.149f, 0.94f));
-                _background.Apply();
-                _style = new GUIStyle
+                _skin = new UiSkin();
+                _style = new GUIStyle(_skin.Panel)
                 {
                     fontSize = 13,
                     alignment = TextAnchor.MiddleCenter,
                     padding = new RectOffset(10, 10, 5, 5)
                 };
-                _style.normal.textColor = new Color(0.9f, 0.925f, 0.97f);
-                _style.normal.background = _background;
+                _style.normal.textColor = UiSkin.TextColor;
             }
 
             // Same scaling as the settings window: laid out for 1080p.
-            float scale = Mathf.Clamp(Screen.height / 1080f, 1f, 3f);
+            float scale = UiEnvironment.Scale;
             Matrix4x4 previous = GUI.matrix;
             Color previousColor = GUI.color;
             GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, 1f));
@@ -64,6 +62,8 @@ namespace ChatPlus
             var content = new GUIContent(_text);
             Vector2 size = _style.CalcSize(content);
             var position = new Vector2(_mouse.x / scale + 14f, (Screen.height - _mouse.y) / scale - size.y - 6f);
+            position.x = Mathf.Clamp(position.x, 8f, Mathf.Max(8f,Screen.width/scale-size.x-8f));
+            position.y = Mathf.Clamp(position.y, 8f, Mathf.Max(8f,Screen.height/scale-size.y-8f));
             GUI.Label(new Rect(position, size), content, _style);
             GUI.color = previousColor;
             GUI.matrix = previous;
@@ -71,8 +71,7 @@ namespace ChatPlus
 
         void OnDestroy()
         {
-            if (_background != null)
-                Destroy(_background);
+            _skin?.Destroy();
             if (_instance == this)
                 _instance = null;
         }

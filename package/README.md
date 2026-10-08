@@ -6,6 +6,14 @@
 
 A BepInEx mod for [On Together](https://store.steampowered.com/app/2688490/On_Together/) that makes the chat nicer to use: the time of every message, a much longer history that comes back after a lobby change and is saved to a file, and a chat window you can resize.
 
+**♥ Enjoying the mod? Leave a like on [Thunderstore](https://thunderstore.io/c/on-together/p/LightShaper/ChatPlus/) and a ⭐ on [GitHub](https://github.com/L1GHTSHAPER/ChatPlus) — it helps the project grow!**
+
+## Settings menu
+
+**F3**, `/chatplus`, the chat-header gear or the speech-bubble side button open/close settings. Tabs: **Appearance**, **Messages**, **History**, **Controls**. Advanced rows collapse.
+
+Cream panels, warm brown text, coral accents, rounded controls and game fonts. Side buttons form one group, show the mod name and the settings hotkey (where available), and move away from visible UI panels. If both edges are blocked, the buttons wait until space becomes available. Existing hotkeys, commands and configuration keys are preserved. Menus scroll on smaller screens; changes save automatically. Where shown, **Apply** saves a field draft. Invalid values keep the saved setting.
+
 ## Features
 
 - **Message time** in front of every message (and, optionally, of the game's notifications), in the format you like: `14:05`, `14:05:09`, `2:05 PM`, `[14:05]` or any .NET time format. Its color and size can be changed. Messages from another day also show the date.
@@ -127,3 +135,17 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1 -GameDir "C:\path\to\On-Tog
 The build creates the plugin DLL in `src/bin/Release/` and the installable Thunderstore archive in `dist/`. Ready-to-install archives are also available in [GitHub Releases](https://github.com/L1GHTSHAPER/ChatPlus/releases).
 
 Run the existing tests with .NET SDK 9.0 or newer: `dotnet run --project tests/ChatPlus.Tests.csproj`.
+
+
+## Русский
+
+**♥ Нравится мод? Поставьте лайк на [Thunderstore](https://thunderstore.io/c/on-together/p/LightShaper/ChatPlus/) и ⭐ звезду на [GitHub](https://github.com/L1GHTSHAPER/ChatPlus) — это помогает проекту расти!**
+
+Настройки открываются через **F3**, `/chatplus`, шестерёнку чата или боковую кнопку с облаком сообщения. Вкладки: **Вид**, **Сообщения**, **История**, **Управление**. Дополнительные параметры сворачиваются.
+
+Кремовые панели, коричневый текст, коралловые акценты и скруглённые элементы. Боковые кнопки собраны в одну группу; при наведении видны название мода и клавиша настроек, если она есть. Группа избегает видимых игровых панелей; когда места нет, кнопки скрываются до освобождения края. Настройки и прежние клавиши сохранены. Низкие окна прокручиваются, изменения сохраняются автоматически; кнопка «Применить», где она есть, сохраняет введённое значение.
+
+
+Side settings buttons are opaque squares with rounded corners, a dark brown outline and proportionate icons, sized to match the game's right-hand controls. They hide with the native controls in Desktop mode, including tooltips and pointer hit areas.
+
+Боковые кнопки настроек стали непрозрачными и квадратными: скруглённые углы, коричневая обводка и значки без растягивания. Размер соответствует высоте игровых кнопок справа. В Desktop-режиме они скрываются вместе с игровыми; подсказки и области нажатия также отключаются.

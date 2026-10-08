@@ -18,7 +18,7 @@ namespace ChatPlus
     {
         public const string PluginGuid = "ontogether.chatplus";
         public const string PluginName = "ChatPlus";
-        public const string PluginVersion = "1.4.1";
+        public const string PluginVersion = "1.4.2";
 
         internal const int MinWidth = 70;
         internal const int MaxWidth = 300;
@@ -95,6 +95,7 @@ namespace ChatPlus
 
         GameObject _host;
         SettingsWindow _window;
+        ModDock _dock;
         Harmony _harmony;
         List<string> _keywords = new List<string>();
         // The chat input whose caret is moved to the end after a recalled message was put into it.
@@ -118,6 +119,7 @@ namespace ChatPlus
             Instance = this;
             Log = Logger;
             BindConfig();
+            UiEnvironment.LanguageOverride = () => Lang.Current == Lang.Russian;
             // Bind() has written any missing keys; from now on saves are batched (see SaveDelay).
             Config.SaveOnConfigSet = false;
             _keywords = TextUtil.ParseKeywords(Keywords.Value);
@@ -133,9 +135,12 @@ namespace ChatPlus
             DontDestroyOnLoad(_host);
             _window = _host.AddComponent<SettingsWindow>();
             _window.enabled = false;
+            _dock = ModDock.Register(PluginName, "chat", _window.Toggle, () => _window.enabled,
+                () => PluginName + " · " + WindowKey.Value, () => GameAccess.Chat != null);
             _host.AddComponent<Toast>();
 
             _harmony = new Harmony(PluginGuid);
+            UiEnvironment.InstallInputGuard(_harmony);
             Patch(typeof(AddMessagePatch), "new messages get no time and are not saved");
             Patch(typeof(AddNotificationPatch), "notifications get no time and are not saved");
             Patch(typeof(ChatStartPatch), "the history is not brought back after a lobby change");
@@ -645,6 +650,7 @@ namespace ChatPlus
 
         void OnDestroy()
         {
+            if (_dock != null) Destroy(_dock.gameObject);
             ChatSelection.Clear();
             HiddenChatNotifications.Clear();
             Config.SettingChanged -= OnSettingChanged;

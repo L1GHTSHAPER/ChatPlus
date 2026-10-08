@@ -1,6 +1,6 @@
-# ChatPlus 1.4.1 — UI validation
+# ChatPlus 1.4.2 — UI validation
 
-Version 1.4.0 was released after user testing. Version 1.4.1 applies opacity to the settings button, gear icon and resize handle. On October 8, 2026, the user explicitly approved publishing this fix without an additional in-game test. The checklist is retained for future UI regressions; it does not imply every resolution or lobby scenario has been exercised.
+Version 1.4.1 applied opacity to the settings button, gear icon and resize handle. Version 1.4.2 adds grouped native-style side buttons, Desktop visibility and shared input/preview guards. On October 8, 2026, the user approved releasing the installed testing builds. Automated checks passed; this approval does not imply that every resolution or lobby scenario below has been exercised. The checklist is retained for future UI regressions.
 
 ## Install
 
