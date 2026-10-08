@@ -58,6 +58,7 @@ namespace ChatPlus
         static Sprite _gripSprite;
         static Sprite _slicedFrame;
         static Sprite _slicedFrameSource;
+        static ChatChrome _chrome;
 
         internal static bool Ready => _ui != null && _root != null;
         internal static Vector2 Size => _root != null ? _root.sizeDelta : Vector2.zero;
@@ -118,6 +119,24 @@ namespace ChatPlus
             if (input != null && input.transform is RectTransform inputRect)
                 Reanchor(inputRect, Vector2.zero, new Vector2(1f, 0f));
 
+            Image nativeFrame = background != null ? background.Find(FrameName)?.GetComponent<Image>() : null;
+            if (input != null)
+            {
+                ChatChrome.Attach(root, nativeFrame, globalScroll, localScroll);
+                _chrome = root.GetComponent<ChatChrome>();
+            }
+            // Include native tab backgrounds, shadows and input decoration, but preserve our interactive controls.
+            foreach (Image image in root.GetComponentsInChildren<Image>(true))
+            {
+                bool custom = false;
+                for (Transform parent = image.transform; parent != null && parent != root; parent = parent.parent)
+                    if (parent.name.StartsWith("ChatPlus.", StringComparison.Ordinal)) { custom = true; break; }
+                if (!custom) BackgroundOpacity.Attach(image);
+            }
+            foreach (RectTransform tab in new[] { GameAccess.TabButton(ui, false), GameAccess.TabButton(ui, true) })
+                if (tab != null)
+                    foreach (Image image in tab.GetComponentsInChildren<Image>(true)) BackgroundOpacity.Attach(image);
+
             TMP_Text prefab = GameAccess.TextPrefab(GameAccess.FindChat());
             float lineWidth = prefab != null && prefab.rectTransform.sizeDelta.x > 1f ? prefab.rectTransform.sizeDelta.x : DefaultLineWidth;
             PrepareContent(GameAccess.Content(ui, false), lineWidth);
@@ -175,6 +194,9 @@ namespace ChatPlus
             if (!Ready) return;
             foreach (BackgroundOpacity opacity in _root.GetComponentsInChildren<BackgroundOpacity>(true))
                 opacity.Refresh();
+            foreach (RectTransform tab in new[] { GameAccess.TabButton(_ui, false), GameAccess.TabButton(_ui, true) })
+                if (tab != null)
+                    foreach (BackgroundOpacity opacity in tab.GetComponentsInChildren<BackgroundOpacity>(true)) opacity.Refresh();
         }
 
         /// <summary>Called every frame: re-wraps the lines once a width change has settled.</summary>
@@ -524,6 +546,8 @@ namespace ChatPlus
 
         internal static void Unload()
         {
+            if (_chrome != null) UnityEngine.Object.Destroy(_chrome);
+            _chrome = null;
             if (_grip != null)
                 UnityEngine.Object.Destroy(_grip);
             _grip = null;

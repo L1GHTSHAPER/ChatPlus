@@ -41,6 +41,8 @@ namespace ChatPlus.Tests
             ChatHistoryTests();
             SelectionTextTests();
             DragRoutingTests.Run(Check);
+            BackgroundOpacityTests.Run(Check);
+            PreviewRenderQueueTests.Run(Check);
             Console.WriteLine($"{_passes} passed, {_failures} failed");
             return _failures == 0 ? 0 : 1;
         }

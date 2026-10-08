@@ -3,44 +3,36 @@ using UnityEngine.UI;
 
 namespace ChatPlus
 {
-    // A material tint changes only this image, including its stencil material. The game's fade still multiplies
-    // its vertex alpha; text, buttons and children keep their own opacity.
-    internal sealed class BackgroundOpacity : MonoBehaviour, IMaterialModifier
+    // Multiply only the image's vertex alpha, independently of its shader. Preserve native fades and text.
+    internal sealed class BackgroundOpacity : BaseMeshEffect
     {
         Image _image;
-        Material _source;
-        Material _tinted;
 
         internal static void Attach(Image image)
         {
-            if (image == null) return;
+            // Stencil masks must keep writing their stencil, even when decorative backgrounds are transparent.
+            if (image == null || image.GetComponent<Mask>() != null) return;
             var opacity = image.GetComponent<BackgroundOpacity>() ?? image.gameObject.AddComponent<BackgroundOpacity>();
             opacity._image = image;
             opacity.Refresh();
         }
 
-        internal void Refresh() => _image?.SetMaterialDirty();
+        internal void Refresh() => _image?.SetVerticesDirty();
 
-        public Material GetModifiedMaterial(Material baseMaterial)
+        public override void ModifyMesh(VertexHelper mesh)
         {
             Plugin plugin = Plugin.Instance;
-            if (plugin == null || plugin.BackgroundOpacity.Value == 100 || baseMaterial == null || !baseMaterial.HasProperty("_Color"))
-                return baseMaterial;
-            if (_tinted == null || _source != baseMaterial)
+            if (!IsActive() || plugin == null || plugin.BackgroundOpacity.Value == 100) return;
+            float opacity = Mathf.Clamp01(plugin.BackgroundOpacity.Value / 100f);
+            var vertex = new UIVertex();
+            for (int i = 0; i < mesh.currentVertCount; i++)
             {
-                if (_tinted != null) Destroy(_tinted);
-                _source = baseMaterial;
-                _tinted = new Material(baseMaterial) { name = "ChatPlus.BackgroundOpacity", hideFlags = HideFlags.HideAndDontSave };
+                mesh.PopulateUIVertex(ref vertex, i);
+                Color32 color = vertex.color;
+                color.a = (byte)Mathf.RoundToInt(color.a * opacity);
+                vertex.color = color;
+                mesh.SetUIVertex(vertex, i);
             }
-            Color tint = baseMaterial.GetColor("_Color");
-            tint.a *= Mathf.Clamp01(plugin.BackgroundOpacity.Value / 100f);
-            _tinted.SetColor("_Color", tint);
-            return _tinted;
-        }
-
-        void OnDestroy()
-        {
-            if (_tinted != null) Destroy(_tinted);
         }
     }
 }

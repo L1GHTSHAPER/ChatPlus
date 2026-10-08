@@ -23,6 +23,8 @@
     <Compile Include="..\src\SelectionText.cs" Link="Mod\SelectionText.cs" />
     <!-- The real pointer handler is exercised with narrow Unity/TMP test doubles in DragRouting.cs. -->
     <Compile Include="..\src\ChatLine.cs" Link="Mod\ChatLine.cs" />
+    <Compile Include="..\src\BackgroundOpacity.cs" Link="Mod\BackgroundOpacity.cs" />
+    <Compile Include="..\src\PreviewRenderQueue.cs" Link="Mod\PreviewRenderQueue.cs" />
   </ItemGroup>
 
 </Project>

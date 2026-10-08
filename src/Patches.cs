@@ -137,17 +137,28 @@ namespace ChatPlus
     internal static class ResetMaterialsPatch
     {
         [HarmonyPrefix]
-        static bool Prefix(TextChannelManager __instance)
+        static bool Prefix(TextChannelManager __instance, out bool __state)
         {
+            __state = false;
+            bool run;
             try
             {
-                return OutlineResets.ShouldRun(__instance);
+                run = OutlineResets.ShouldRun(__instance);
             }
             catch (Exception e)
             {
                 Plugin.LogError("Could not check the chat font outline: ", e);
-                return true;
+                run = true;
             }
+            if (run) { OutlineResets.BeginReset(); __state = true; }
+            return run;
+        }
+
+        [HarmonyFinalizer]
+        static Exception Finalizer(Exception __exception, bool __state)
+        {
+            if (__state) OutlineResets.EndReset();
+            return __exception;
         }
     }
 

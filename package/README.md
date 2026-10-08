@@ -19,9 +19,9 @@ A BepInEx mod for [On Together](https://store.steampowered.com/app/2688490/On_To
 - **Up / Down** in the empty input field bring back the messages and commands you sent before.
 - **Select and copy text:** hold **Shift**, then drag with the left mouse button, within a message or across multiple messages, and press **Ctrl+C**. **Escape** or a click elsewhere clears the selection. An ordinary left-button drag or touch swipe scrolls the chat; the mouse wheel also scrolls. The gesture mode is fixed when you press, so changing Shift during a drag does not switch actions. Dragging a selection beyond the viewport scrolls too. An ordinary click still opens the player's card; a swipe does not.
 - **Right-click** within the selection to copy it, or right-click another message to copy its whole text.
-- **Background opacity:** set it from 0% (transparent) to 100% (the original background), separately from the text size. Text and controls keep their opacity.
-- In-game settings window (**F3** or `/chatplus`); the same settings are in the mod manager's config editor, and edits made there apply while the game is running.
-- **Message editor** at the top of the F3 window: a draft, live preview using the game's text renderer, font selection, solid colors or gradients, bold and italic. Choose colors from presets, type `#RRGGBB`, or click the swatch for RGB sliders. **Insert into chat** copies the draft into the normal chat input; press Enter there to send.
+- **Background opacity:** set it from 0% (transparent) to 100% (the original background), separately from the text size. This includes the frame, chat and input backgrounds, and Global/Local tab backgrounds. Text and the settings gear remain readable.
+- **Settings in the game's style:** a cream/coral F3 window with **Appearance**, **Messages**, **History** and **Controls** tabs, live previews and collapsible advanced options. Open it with **F3**, `/chatplus` or the **gear in the chat header**. The header also shows scrolling, selection and copying hints. Settings save automatically; mod-manager config edits apply while the game is running.
+- **Message editor** in **F3 → Messages**: a draft, live preview using the game's text renderer, font selection, solid colors or gradients, bold and italic. Choose colors from presets, type `#RRGGBB`, or click the swatch for RGB sliders. **Insert into chat** copies the draft into the normal chat input; press Enter there to send.
 - Optional outgoing formatting uses the game's standard text tags, so recipients do not need ChatPlus. Font choices are the normal game font and built-in **Liberation Sans**; Liberation Sans changes Latin letters, while Russian letters keep the usual fallback font. Gradients use up to eight color bands and fewer bands when needed to fit the game's 250-character limit (including tags). Messages that cannot fit are not sent or truncated, and the draft is kept. Commands and manually tagged messages are left alone.
 - Only the sender needs the mod. Other features remain local; outgoing formatting is sent as part of the ordinary message text. English and Russian interface (follows the game's language).
 
@@ -29,11 +29,12 @@ A BepInEx mod for [On Together](https://store.steampowered.com/app/2688490/On_To
 
 | Action | How |
 |---|---|
-| Settings window | **F3** or `/chatplus` |
+| Settings window | **F3**, `/chatplus` or the gear in the chat header |
 | Resize the chat | drag the handle at its top-right corner; double-click it for the normal size |
 | Size from the chat | `/chatplus size 150 120` (width and height in %), `/chatplus size reset` |
 | Text size | `/chatplus text 120` |
-| Background opacity | **F3 → Chat window → Background opacity** (0–100%) |
+| Background opacity | **F3 → Appearance → Background opacity** (0–100%) |
+| Message editor | **F3 → Messages** |
 | Scroll the chat | left-button drag / swipe, or mouse wheel |
 | Select / copy text | hold **Shift** before left-dragging, then **Ctrl+C** or right-click within the selection; **Escape** clears |
 | Message time | `/chatplus time on`, `/chatplus time off`, `/chatplus time format HH:mm:ss` |

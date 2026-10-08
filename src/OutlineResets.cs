@@ -12,6 +12,10 @@ namespace ChatPlus
         static bool _outline;
         // Calls still allowed after a change: the game's second call on the next frame.
         static int _extra;
+        static int _resetDepth;
+        internal static bool Resetting => _resetDepth > 0;
+        internal static void BeginReset() => _resetDepth++;
+        internal static void EndReset() { if (_resetDepth > 0) _resetDepth--; }
 
         internal static bool ShouldRun(TextChannelManager chat)
         {

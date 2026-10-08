@@ -4,7 +4,8 @@
     <TargetFramework>netstandard2.1</TargetFramework>
     <AssemblyName>ChatPlus</AssemblyName>
     <RootNamespace>ChatPlus</RootNamespace>
-    <Version>1.3.1</Version>
+    <Version>1.4.0</Version>
+    <InformationalVersion>1.4.0</InformationalVersion>
     <LangVersion>9.0</LangVersion>
     <Nullable>disable</Nullable>
     <DebugType>none</DebugType>
@@ -35,6 +36,7 @@
     <Reference Include="UnityEngine.IMGUIModule" HintPath="$(GameManaged)\UnityEngine.IMGUIModule.dll" Private="false" />
     <Reference Include="UnityEngine.TextRenderingModule" HintPath="$(GameManaged)\UnityEngine.TextRenderingModule.dll" Private="false" />
     <Reference Include="UnityEngine.InputLegacyModule" HintPath="$(GameManaged)\UnityEngine.InputLegacyModule.dll" Private="false" />
+    <Reference Include="Unity.InputSystem" HintPath="$(GameManaged)\Unity.InputSystem.dll" Private="false" />
     <Reference Include="UnityEngine.UI" HintPath="$(GameManaged)\UnityEngine.UI.dll" Private="false" />
     <Reference Include="UnityEngine.UIModule" HintPath="$(GameManaged)\UnityEngine.UIModule.dll" Private="false" />
   </ItemGroup>

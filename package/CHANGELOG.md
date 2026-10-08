@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.0
+
+- Redesigned F3 in the game's cream/coral style with Appearance, Messages, History and Controls tabs, live previews, and collapsible advanced controls. Settings still save automatically.
+- Added a settings gear and gesture hints inside the chat header. The input and move handle keep their native positions.
+- Fixed 0% opacity for native chat backgrounds and Global/Local tab fills and borders while preserving text, stencil masks and the settings gear.
+- Fixed Shift + drag selection for Input System mouse devices and native font-material refreshes, including selection started from a focused input. Ordinary dragging still scrolls.
+- Kept preview text inside its IMGUI box and deferred preview rendering to LateUpdate with a reentry guard, fixing UniversalCameraData errors. Preview output now has the depth buffer required by URP Render Graph.
+
 ## 1.3.1
 
 - Restored native chat scrolling by holding the left mouse button and dragging, including when starting on message text. Touch swipes also scroll.

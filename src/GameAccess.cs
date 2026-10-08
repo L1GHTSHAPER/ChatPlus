@@ -36,6 +36,8 @@ namespace ChatPlus
         static readonly AccessTools.FieldRef<UIManager, RectTransform> CornerBottomLeftRef = Field<UIManager, RectTransform>("_messageCornerTransform1");
         static readonly AccessTools.FieldRef<UIManager, Transform> GlobalScrollRef = Field<UIManager, Transform>("_globalMessagePanel");
         static readonly AccessTools.FieldRef<UIManager, Transform> LocalScrollRef = Field<UIManager, Transform>("_localMessagePanel");
+        static readonly AccessTools.FieldRef<UIManager, RectTransform> GlobalTabRef = Field<UIManager, RectTransform>("_globalButtonTransform");
+        static readonly AccessTools.FieldRef<UIManager, RectTransform> LocalTabRef = Field<UIManager, RectTransform>("_localButtonTransform");
         static readonly AccessTools.FieldRef<UIManager, List<Image>> PanelImagesRef = Field<UIManager, List<Image>>("_messagePanelImages");
         static readonly AccessTools.FieldRef<UIManager, float> LimitMinXRef = Field<UIManager, float>("_messageLimitMinX");
         static readonly AccessTools.FieldRef<UIManager, float> LimitMinYRef = Field<UIManager, float>("_messageLimitMinY");
@@ -157,6 +159,7 @@ namespace ChatPlus
         public static Transform GlobalScroll(UIManager ui) => Get(GlobalScrollRef, ui);
         public static Transform LocalScroll(UIManager ui) => Get(LocalScrollRef, ui);
         public static List<Image> PanelImages(UIManager ui) => Get(PanelImagesRef, ui);
+        public static RectTransform TabButton(UIManager ui, bool local) => Get(local ? LocalTabRef : GlobalTabRef, ui);
 
         public static bool HasDragLimits => LimitMinXRef != null && LimitMinYRef != null && LimitMaxXRef != null;
 

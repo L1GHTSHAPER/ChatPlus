@@ -13,8 +13,8 @@ namespace ChatPlus
     internal sealed class SettingsWindow : MonoBehaviour
     {
         const int WindowId = 0x43504C53;
-        const float Width = 540f;
-        const float LabelWidth = 170f;
+        const float Width = 600f;
+        float LabelWidth => Mathf.Clamp((_rect.width - 40f) * 0.32f, 90f, 170f);
         const float ArrowWidth = 26f;
         const float ValueWidth = 58f;
         const float Indent = 26f;
@@ -29,7 +29,12 @@ namespace ChatPlus
         bool _placed;
         float _screenHeight;
         Vector2 _scroll;
-        float _contentHeight = 700f;
+        int _tab;
+        int _pendingTab = -1;
+        readonly Vector2[] _tabScrolls = new Vector2[4];
+        bool _windowExpanded;
+        bool _timeExpanded;
+        bool _previewDrawn;
         // The IMGUI control of this window that holds the mouse (slider or window drag), released on close.
         int _hotControl;
         GameObject _blockerCanvas;
@@ -40,9 +45,6 @@ namespace ChatPlus
         readonly Dictionary<ConfigEntry<string>, string> _colorValues = new Dictionary<ConfigEntry<string>, string>();
         readonly HashSet<ConfigEntry<string>> _expandedColors = new HashSet<ConfigEntry<string>>();
         string _editorDraft = string.Empty;
-        string _previewText;
-        Rect _previewBounds;
-        Rect _scrollBounds;
 
         public void Toggle()
         {
@@ -81,9 +83,15 @@ namespace ChatPlus
                 _blockerCanvas.SetActive(false);
         }
 
+        void LateUpdate()
+        {
+            _messagePreview.RenderPending();
+        }
+
         void OnGUI()
         {
-            if (Plugin.Instance == null)
+            // A manual preview render can invoke GUI callbacks; never draw or queue F3 inside it.
+            if (_messagePreview.Rendering || Plugin.Instance == null)
                 return;
             if (_skin == null)
                 _skin = new UiSkin();
@@ -102,7 +110,10 @@ namespace ChatPlus
                 _placed = true;
             }
 
-            _rect = GUILayout.Window(WindowId, _rect, _drawWindow, GUIContent.none, _skin.Window, GUILayout.Width(Width));
+            float windowWidth = Mathf.Min(Width, screenWidth - 24f);
+            _rect.width = windowWidth;
+            if (Event.current.type == EventType.Repaint) _previewDrawn = false;
+            _rect = GUILayout.Window(WindowId, _rect, _drawWindow, GUIContent.none, _skin.Window, GUILayout.Width(windowWidth));
             _rect.x = Mathf.Clamp(_rect.x, 0f, Mathf.Max(0f, screenWidth - _rect.width));
             _rect.y = Mathf.Clamp(_rect.y, 0f, Mathf.Max(0f, _screenHeight - _rect.height));
             GUI.matrix = previousMatrix;
@@ -110,10 +121,7 @@ namespace ChatPlus
             if (Event.current.type == EventType.Repaint)
             {
                 UpdateBlocker(scale);
-                if (enabled && _previewText != null)
-                    _messagePreview.Show(_previewBounds, _scrollBounds, _previewText);
-                else
-                    _messagePreview.Hide();
+                if (!enabled || !_previewDrawn) _messagePreview.Hide();
             }
         }
 
@@ -123,63 +131,154 @@ namespace ChatPlus
             Lang lang = Lang.Current;
             int hotControlBefore = GUIUtility.hotControl;
 
+            // Change the control tree only on Layout, after the old tab has finished its mouse event.
+            if (Event.current.type == EventType.Layout && _pendingTab >= 0)
+            {
+                _tabScrolls[_tab] = _scroll;
+                _tab = _pendingTab;
+                _pendingTab = -1;
+                _scroll = _tabScrolls[_tab];
+                _confirmClearUntil = 0f;
+                GUI.FocusControl(null);
+            }
             GUILayout.BeginHorizontal();
-            GUILayout.Label(lang.Title, _skin.Title);
+            GUILayout.Label("C+", _skin.Logo);
+            GUILayout.BeginVertical();
+            GUILayout.Label("ChatPlus", _skin.Title);
+            GUILayout.Label(lang.SettingsSubtitle, _skin.Subtitle);
+            GUILayout.EndVertical();
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("×", _skin.CloseButton))
                 SetOpen(false);
             GUILayout.EndHorizontal();
 
-            // The settings scroll when the screen is too low for all of them. The few spare pixels cover the first
-            // panel's margin and rounding, so no scrollbar appears when everything fits.
-            float viewHeight = Mathf.Min(_contentHeight + 4f, Mathf.Max(200f, _screenHeight - 140f));
+            GUILayout.Space(8f);
+            DrawTabs(lang);
+            GUILayout.Space(8f);
+
+            // A stable body height prevents the window jumping around when tabs or advanced controls change.
+            float viewHeight = Mathf.Min(580f, Mathf.Max(100f, _screenHeight - (_rect.width < 480f ? 220f : 180f)));
             _scroll = GUILayout.BeginScrollView(_scroll, false, false, GUI.skin.horizontalScrollbar,
                 GUI.skin.verticalScrollbar, GUIStyle.none, GUILayout.Height(viewHeight));
             GUILayout.BeginVertical();
             DrawSettings(plugin, lang);
             GUILayout.EndVertical();
-            if (Event.current.type == EventType.Repaint)
-                _contentHeight = GUILayoutUtility.GetLastRect().height;
             GUILayout.EndScrollView();
-            if (Event.current.type == EventType.Repaint)
-                _scrollBounds = ScreenRect(GUILayoutUtility.GetLastRect());
 
-            GUILayout.Space(10f);
+            GUILayout.Space(12f);
             GUILayout.BeginHorizontal();
+            GUILayout.Label(lang.AutoSaved, _skin.Hint);
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button(lang.Close, _skin.Button))
-                SetOpen(false);
+            GUILayout.Label("LightShaper · local test", _skin.Hint);
             GUILayout.EndHorizontal();
-            GUILayout.Space(6f);
-            GUILayout.Label(string.Format(lang.WindowHint, plugin.WindowKey.Value), _skin.Hint);
 
-            GUI.DragWindow(new Rect(0f, 0f, 10000f, 40f));
+            GUI.DragWindow(new Rect(0f, 0f, 10000f, 66f));
 
             // A control in this window took or released the mouse during this event.
             if (GUIUtility.hotControl != hotControlBefore)
                 _hotControl = GUIUtility.hotControl;
         }
 
+        void DrawTabs(Lang lang)
+        {
+            string[] names = { lang.TabAppearance, lang.TabMessages, lang.TabHistory, lang.TabControls };
+            int columns = _rect.width < 480f ? 2 : 4;
+            for (int row = 0; row < 4 / columns; row++)
+            {
+                GUILayout.BeginHorizontal();
+                for (int column = 0; column < columns; column++)
+                {
+                    int tab = row * columns + column;
+                    if (GUILayout.Button(names[tab], tab == _tab ? _skin.SelectedTab : _skin.Tab))
+                        _pendingTab = tab;
+                }
+                GUILayout.EndHorizontal();
+            }
+        }
+
         void DrawSettings(Plugin plugin, Lang lang)
         {
+            switch (_tab)
+            {
+                case 0: DrawAppearance(plugin, lang); break;
+                case 1: DrawMessageEditor(plugin, lang); break;
+                case 2: DrawHistory(plugin, lang); break;
+                case 3: DrawControls(plugin, lang); break;
+            }
+        }
+
+        void DrawAppearance(Plugin plugin, Lang lang)
+        {
             bool enabled = GUI.enabled;
-
-            DrawMessageEditor(plugin, lang);
-
-            // Message time
             GUILayout.BeginVertical(_skin.Panel);
-            GUILayout.Label(lang.SectionTime, _skin.SectionTitle);
+            GUILayout.Label(lang.ReadingTitle, _skin.SectionTitle);
+            LargeSlider(plugin.TextSize, lang.TextSize, Plugin.MinTextSize, Plugin.MaxTextSize, 5, "%");
+            LargeSlider(plugin.BackgroundOpacity, lang.BackgroundOpacity, 0, 100, 5, "%");
+            GUILayout.Label(lang.BackgroundOpacityHint, _skin.Hint);
+            GUILayout.Space(8f);
+            GUILayout.Label(lang.PreviewLive, _skin.Label);
+            // Only the background changes alpha; the sample keeps the same text opacity as the real chat.
+            Rect preview = GUILayoutUtility.GetRect(10f, Mathf.Max(102f, plugin.TextSize.Value), GUILayout.ExpandWidth(true));
+            GUI.Box(preview, GUIContent.none, _skin.Preview);
+            Color tint = GUI.color;
+            GUI.color = new Color(tint.r, tint.g, tint.b, tint.a * plugin.BackgroundOpacity.Value / 100f);
+            GUI.Box(preview, GUIContent.none, _skin.PreviewPaper);
+            GUI.color = tint;
+            if (Event.current.type == EventType.Repaint)
+            {
+                string sample = lang.PreviewChat;
+                if (plugin.Timestamps.Value)
+                {
+                    var style = plugin.BuildStyle(string.Empty, lang);
+                    if (style.TimeColor == Presets.DefaultTimeColor) style.TimeColor = "#796B5B";
+                    string time = ChatFormat.Stamp(DateTime.Now, DateTime.Now, style);
+                    sample = time + sample.Replace("\n", "\n" + time);
+                }
+                _messagePreview.Draw(new Rect(preview.x + 12f, preview.y + 10f, preview.width - 24f, preview.height - 20f),
+                    sample, 16f * plugin.TextSize.Value / 100f, UiSkin.TextColor);
+                _previewDrawn = true;
+            }
+            GUILayout.Space(8f);
             ToggleRow(plugin.Timestamps, lang.ShowTime);
-            GUI.enabled = enabled && plugin.Timestamps.Value;
-            ChoiceRow(lang.TimeFormat, ChatFormat.FormatTime(DateTime.Now, plugin.TimeFormat.Value), step =>
-                plugin.TimeFormat.Value = Presets.Step(Presets.TimeFormats, plugin.TimeFormat.Value, step, false));
-            ColorRow(lang.TimeColor, plugin.TimeColor, Presets.TimeColors, lang);
-            IntRow(plugin.TimeSize, lang.TimeSize, 50, 100, 5, "%");
-            ToggleRow(plugin.TimeOnNotifications, lang.TimeOnNotifications);
-            GUI.enabled = enabled;
+            _timeExpanded = GUILayout.Toggle(_timeExpanded, (_timeExpanded ? "▼ " : "► ") + lang.TimeAdvanced, _skin.ToggleLabel);
+            if (_timeExpanded)
+            {
+                GUI.enabled = enabled && plugin.Timestamps.Value;
+                ChoiceRow(lang.TimeFormat, ChatFormat.FormatTime(DateTime.Now, plugin.TimeFormat.Value), step =>
+                    plugin.TimeFormat.Value = Presets.Step(Presets.TimeFormats, plugin.TimeFormat.Value, step, false));
+                ColorRow(lang.TimeColor, plugin.TimeColor, Presets.TimeColors, lang);
+                IntRow(plugin.TimeSize, lang.TimeSize, 50, 100, 5, "%");
+                ToggleRow(plugin.TimeOnNotifications, lang.TimeOnNotifications);
+                GUI.enabled = enabled;
+            }
             GUILayout.EndVertical();
 
-            // History
+            GUILayout.BeginVertical(_skin.Panel);
+            _windowExpanded = GUILayout.Toggle(_windowExpanded, (_windowExpanded ? "▼ " : "► ") + lang.WindowAdvanced, _skin.ToggleLabel);
+            if (_windowExpanded)
+            {
+                IntRow(plugin.Width, lang.Width, Plugin.MinWidth, Plugin.MaxWidth, 5, "%");
+                IntRow(plugin.Height, lang.Height, Plugin.MinHeight, Plugin.MaxHeight, 5, "%");
+                ToggleRow(plugin.ResizeHandle, lang.ResizeHandle);
+                GUILayout.Label(lang.ResizeHint, _skin.Hint);
+                ToggleRow(plugin.RememberPosition, lang.RememberPosition);
+                ToggleRow(plugin.CullHiddenLines, lang.CullHiddenLines);
+                GUILayout.Space(6f);
+                if (GUILayout.Button(lang.ResetWindow, _skin.Button)) plugin.ResetWindow();
+            }
+            GUILayout.EndVertical();
+
+            GUILayout.BeginVertical(_skin.Panel);
+            GUILayout.Label(lang.SectionNotifications, _skin.SectionTitle);
+            ToggleRow(plugin.ShowGlobalCounter, lang.ShowGlobalCounter);
+            ToggleRow(plugin.ShowLocalCounter, lang.ShowLocalCounter);
+            GUILayout.Label(lang.CountersHint, _skin.Hint);
+            GUILayout.EndVertical();
+        }
+
+        void DrawHistory(Plugin plugin, Lang lang)
+        {
+            bool enabled = GUI.enabled;
             GUILayout.BeginVertical(_skin.Panel);
             GUILayout.Label(lang.SectionHistory, _skin.SectionTitle);
             IntRow(plugin.GlobalLimit, lang.GlobalLimit, 25, 1000, 25, string.Empty);
@@ -195,9 +294,11 @@ namespace ChatPlus
             GUI.enabled = enabled;
             ToggleRow(plugin.DailyLogs, lang.DailyLogs);
             GUILayout.Space(6f);
-            GUILayout.BeginHorizontal();
             if (GUILayout.Button(lang.OpenFolder, _skin.Button))
                 plugin.OpenHistoryFolder();
+            GUILayout.Space(8f);
+            bool wide = _rect.width >= 480f;
+            if (wide) GUILayout.BeginHorizontal();
             if (GUILayout.Button(lang.ClearChat, _skin.Button))
                 ChatLines.Clear();
             // The history cannot be brought back, so clearing it takes a second click.
@@ -214,37 +315,30 @@ namespace ChatPlus
                     _confirmClearUntil = Time.unscaledTime + ConfirmTime;
                 }
             }
-            GUILayout.FlexibleSpace();
-            GUILayout.EndHorizontal();
+            if (wide)
+            {
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
+            }
             GUILayout.Label(string.Format(lang.HistoryCount, plugin.History.Count), _skin.Hint);
             GUILayout.EndVertical();
+        }
 
-            // Chat window
+        void DrawControls(Plugin plugin, Lang lang)
+        {
+            bool enabled = GUI.enabled;
             GUILayout.BeginVertical(_skin.Panel);
-            GUILayout.Label(lang.SectionWindow, _skin.SectionTitle);
-            IntRow(plugin.Width, lang.Width, Plugin.MinWidth, Plugin.MaxWidth, 5, "%");
-            IntRow(plugin.Height, lang.Height, Plugin.MinHeight, Plugin.MaxHeight, 5, "%");
-            IntRow(plugin.TextSize, lang.TextSize, Plugin.MinTextSize, Plugin.MaxTextSize, 5, "%");
-            IntRow(plugin.BackgroundOpacity, lang.BackgroundOpacity, 0, 100, 5, "%");
-            GUILayout.Label(lang.BackgroundOpacityHint, _skin.Hint);
-            ToggleRow(plugin.ResizeHandle, lang.ResizeHandle);
-            GUILayout.Label(lang.ResizeHint, _skin.Hint);
-            ToggleRow(plugin.RememberPosition, lang.RememberPosition);
-            ToggleRow(plugin.CullHiddenLines, lang.CullHiddenLines);
-            GUILayout.Space(6f);
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button(lang.ResetWindow, _skin.Button))
-                plugin.ResetWindow();
-            GUILayout.FlexibleSpace();
-            GUILayout.EndHorizontal();
-            GUILayout.EndVertical();
-
-            // Collapsed chat notifications
-            GUILayout.BeginVertical(_skin.Panel);
-            GUILayout.Label(lang.SectionNotifications, _skin.SectionTitle);
-            ToggleRow(plugin.ShowGlobalCounter, lang.ShowGlobalCounter);
-            ToggleRow(plugin.ShowLocalCounter, lang.ShowLocalCounter);
-            GUILayout.Label(lang.CountersHint, _skin.Hint);
+            GUILayout.Label(lang.ControlsTitle, _skin.SectionTitle);
+            ShortcutRow(lang.ScrollGesture, lang.DragKey);
+            ShortcutRow(lang.SelectGesture, plugin.SelectText.Value ? lang.SelectKey : lang.SelectionOff);
+            ShortcutRow(lang.CopyGesture, "Ctrl + C");
+            ShortcutRow(lang.SettingsSubtitle, plugin.WindowKey.Value.ToString());
+            GUILayout.Space(8f);
+            ToggleRow(plugin.SelectText, lang.SelectText);
+            ToggleRow(plugin.RightClickCopy, lang.RightClickCopy);
+            ToggleRow(plugin.RecallSent, lang.RecallSent);
+            GUILayout.Label(lang.SelectTextHint, _skin.Hint);
+            GUILayout.Label(string.Format(lang.WindowHint, plugin.WindowKey.Value), _skin.Hint);
             GUILayout.EndVertical();
 
             // Extras
@@ -260,11 +354,27 @@ namespace ChatPlus
             GUILayout.EndHorizontal();
             GUILayout.Label(lang.KeywordsHint, _skin.Hint);
             GUI.enabled = enabled;
-            ToggleRow(plugin.RecallSent, lang.RecallSent);
-            ToggleRow(plugin.RightClickCopy, lang.RightClickCopy);
-            ToggleRow(plugin.SelectText, lang.SelectText);
-            GUILayout.Label(lang.SelectTextHint, _skin.Hint);
             GUILayout.EndVertical();
+        }
+
+        void ShortcutRow(string label, string key)
+        {
+            GUILayout.BeginHorizontal(_skin.Row);
+            GUILayout.Label(label, _skin.Label, Shrinkable);
+            GUILayout.Label(key, _skin.Value, GUILayout.Width(_rect.width < 480f ? 125f : 180f));
+            GUILayout.EndHorizontal();
+        }
+
+        void LargeSlider(ConfigEntry<int> entry, string label, int min, int max, int step, string suffix)
+        {
+            GUILayout.Space(8f);
+            GUILayout.BeginHorizontal();
+            GUILayout.Label(label, _skin.Label, Shrinkable);
+            GUILayout.Label(entry.Value + suffix, _skin.Value, GUILayout.Width(ValueWidth));
+            GUILayout.EndHorizontal();
+            float raw = GUILayout.HorizontalSlider(entry.Value, min, max, _skin.Slider, _skin.Thumb);
+            if (Mathf.Abs(raw - entry.Value) > 0.001f)
+                entry.Value = Mathf.Clamp(Mathf.RoundToInt(raw / step) * step, min, max);
         }
 
         void TMPDraftFromChat()
@@ -306,12 +416,15 @@ namespace ChatPlus
             GUI.Box(preview, GUIContent.none, _skin.Panel);
             if (Event.current.type == EventType.Repaint)
             {
-                _previewBounds = ScreenRect(new Rect(preview.x + 8f, preview.y + 4f, preview.width - 16f, preview.height - 8f));
                 string sample = string.IsNullOrEmpty(_editorDraft) ? lang.OutgoingSample : _editorDraft;
-                if (!OutgoingFormat.TryCompose(sample, plugin.BuildOutgoingStyle(), out _previewText))
-                    _previewText = "<noparse>" + sample + "</noparse>";
+                if (!OutgoingFormat.TryCompose(sample, plugin.BuildOutgoingStyle(), out string previewText))
+                    previewText = "<noparse>" + sample + "</noparse>";
+                _messagePreview.Draw(new Rect(preview.x + 8f, preview.y + 4f, preview.width - 16f, preview.height - 8f),
+                    previewText, 18f, UiSkin.TextColor);
+                _previewDrawn = true;
             }
-            GUILayout.BeginHorizontal();
+            bool wide = _rect.width >= 480f;
+            if (wide) GUILayout.BeginHorizontal();
             GUI.enabled = enabled && fits && !string.IsNullOrWhiteSpace(_editorDraft) && GameAccess.MessageInput != null;
             if (GUILayout.Button(lang.OutgoingInsert, _skin.Button))
             {
@@ -334,8 +447,11 @@ namespace ChatPlus
                 _colorDrafts.Clear();
                 _colorValues.Clear();
             }
-            GUILayout.FlexibleSpace();
-            GUILayout.EndHorizontal();
+            if (wide)
+            {
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
+            }
             GUILayout.Label(lang.OutgoingHint, _skin.Hint);
             GUILayout.EndVertical();
         }
@@ -401,21 +517,14 @@ namespace ChatPlus
             return next;
         }
 
-        static Rect ScreenRect(Rect rect)
-        {
-            Vector2 start = GUIUtility.GUIToScreenPoint(rect.min);
-            Vector2 end = GUIUtility.GUIToScreenPoint(rect.max);
-            return new Rect(start, end - start);
-        }
-
         void ToggleRow(ConfigEntry<bool> entry, string label, float indent = 0f)
         {
             GUILayout.BeginHorizontal(_skin.Row);
             if (indent > 0f)
                 GUILayout.Space(indent);
-            bool value = GUILayout.Toggle(entry.Value, GUIContent.none, _skin.Check);
             if (GUILayout.Button(label, _skin.ToggleLabel, Shrinkable))
-                value = !entry.Value;
+                entry.Value = !entry.Value;
+            bool value = GUILayout.Toggle(entry.Value, GUIContent.none, _skin.Check);
             GUILayout.EndHorizontal();
             if (value != entry.Value)
                 entry.Value = value;

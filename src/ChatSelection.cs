@@ -29,6 +29,9 @@ namespace ChatPlus
         {
             if (!Enabled || text == null || pointer.button != PointerEventData.InputButton.Left) return;
             Clear();
+            // Explicit selection transfers focus without clearing the input's draft.
+            if (GameAccess.IsAnyTextFieldFocused() && EventSystem.current != null)
+                EventSystem.current.SetSelectedGameObject(null);
             _anchor = _caret = text;
             _startedFrame = Time.frameCount;
             _content = text.transform.parent;

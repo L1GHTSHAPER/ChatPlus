@@ -18,7 +18,7 @@ namespace ChatPlus
     {
         public const string PluginGuid = "ontogether.chatplus";
         public const string PluginName = "ChatPlus";
-        public const string PluginVersion = "1.3.1";
+        public const string PluginVersion = "1.4.0";
 
         internal const int MinWidth = 70;
         internal const int MaxWidth = 300;

@@ -70,12 +70,20 @@ namespace ChatPlus
             _scroll = GetComponentInParent<UnityEngine.UI.ScrollRect>();
             // Choose once at the press. Releasing Shift or pressing it during a swipe must not change its owner.
             // Touch gestures always keep the native scrolling behavior.
-            _selecting = ChatSelection.Enabled && eventData.pointerId < 0 &&
+            _selecting = ChatSelection.Enabled && IsMousePointer(eventData) &&
                 (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift));
             if (_selecting)
                 ChatSelection.Begin(_text, eventData);
             else
                 ChatSelection.Clear();
+        }
+
+        internal static bool IsMousePointer(PointerEventData pointer)
+        {
+            // Input System uses device IDs, including positive mouse IDs; legacy uGUI uses negative mouse IDs.
+            if (pointer is UnityEngine.InputSystem.UI.ExtendedPointerEventData extended)
+                return extended.pointerType == UnityEngine.InputSystem.UI.UIPointerType.MouseOrPen;
+            return pointer.pointerId < 0;
         }
 
         public void OnInitializePotentialDrag(PointerEventData eventData)
@@ -128,6 +136,8 @@ namespace ChatPlus
 
         void OnDisable()
         {
+            // Font material refresh briefly disables both contents and immediately enables them again.
+            if (OutlineResets.Resetting) return;
             bool selecting = _selecting;
             StopDrag();
             if (selecting) ChatSelection.Clear();

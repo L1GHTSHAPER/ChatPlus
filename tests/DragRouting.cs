@@ -16,6 +16,7 @@ namespace ChatPlus.Tests
         static ChatLine Create(out ScrollRect scroll)
         {
             Input.Shift = Input.RightShift = false;
+            OutlineResets.Resetting = false;
             ChatSelection.Enabled = true;
             ChatSelection.CanStart = true;
             ChatSelection.Calls.Clear();
@@ -67,6 +68,50 @@ namespace ChatPlus.Tests
             line.OnBeginDrag(pointer);
             line.OnEndDrag(pointer);
             check(ChatSelection.Calls.Contains("begin-drag"), "right Shift also selects");
+
+            line = Create(out scroll);
+            Input.Shift = true;
+            pointer = new UnityEngine.InputSystem.UI.ExtendedPointerEventData
+            { pointerId = 42, pointerType = UnityEngine.InputSystem.UI.UIPointerType.MouseOrPen };
+            line.OnPointerDown(pointer);
+            line.OnInitializePotentialDrag(pointer);
+            line.OnBeginDrag(pointer);
+            line.OnDrag(pointer);
+            line.OnEndDrag(pointer);
+            check(ChatSelection.Calls.Contains("begin-drag") && !scroll.Calls.Contains("begin"), "Input System mouse with a positive device ID selects with Shift");
+
+            line = Create(out scroll);
+            Input.Shift = true;
+            pointer = new UnityEngine.InputSystem.UI.ExtendedPointerEventData
+            { pointerId = -1, pointerType = UnityEngine.InputSystem.UI.UIPointerType.Touch, delta = new Vector2(0f, 18f) };
+            line.OnPointerDown(pointer);
+            line.OnInitializePotentialDrag(pointer);
+            line.OnBeginDrag(pointer);
+            line.OnDrag(pointer);
+            line.OnEndDrag(pointer);
+            check(scroll.Position == 18f && !ChatSelection.Calls.Contains("begin"), "explicit Input System touch metadata takes precedence over a negative pointer ID");
+
+            line = Create(out scroll);
+            Input.Shift = true;
+            pointer = Press(line);
+            OutlineResets.Resetting = true;
+            typeof(ChatLine).GetMethod("OnDisable", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(line, null);
+            OutlineResets.Resetting = false;
+            line.OnBeginDrag(pointer);
+            line.OnDrag(pointer);
+            line.OnEndDrag(pointer);
+            check(ChatSelection.Calls.SequenceEqual(new[] { "begin", "begin-drag", "drag", "end" }), "temporary font refresh before the drag threshold preserves the selection anchor and press mode");
+
+            line = Create(out scroll);
+            Input.Shift = true;
+            pointer = Press(line);
+            line.OnBeginDrag(pointer);
+            OutlineResets.Resetting = true;
+            typeof(ChatLine).GetMethod("OnDisable", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(line, null);
+            OutlineResets.Resetting = false;
+            line.OnDrag(pointer);
+            line.OnEndDrag(pointer);
+            check(ChatSelection.Calls.SequenceEqual(new[] { "begin", "begin-drag", "drag", "end" }), "temporary font refresh during selection neither clears it nor releases the gesture early");
 
             line = Create(out scroll);
             Input.Shift = true;
@@ -160,6 +205,19 @@ namespace UnityEngine
     public enum KeyCode { LeftShift, RightShift }
     public static class Input { public static bool Shift, RightShift; public static bool GetKey(KeyCode key) => key == KeyCode.LeftShift ? Shift : RightShift; }
     public static class GUIUtility { public static string systemCopyBuffer; }
+    public struct Color32 { public byte r, g, b, a; public Color32(byte r, byte g, byte b, byte a) { this.r = r; this.g = g; this.b = b; this.a = a; } }
+    public struct UIVertex { public Color32 color; }
+    public static class Mathf
+    {
+        public static float Clamp01(float value) => Math.Max(0f, Math.Min(1f, value));
+        public static int RoundToInt(float value) => (int)Math.Round(value);
+    }
+}
+
+namespace UnityEngine.InputSystem.UI
+{
+    public enum UIPointerType { MouseOrPen, Touch, Tracked }
+    public class ExtendedPointerEventData : PointerEventData { public UIPointerType pointerType { get; set; } }
 }
 
 namespace UnityEngine.EventSystems
@@ -182,6 +240,21 @@ namespace UnityEngine.EventSystems
 
 namespace UnityEngine.UI
 {
+    public abstract class BaseMeshEffect : MonoBehaviour
+    {
+        public bool Active = true;
+        public bool IsActive() => Active;
+        public abstract void ModifyMesh(VertexHelper mesh);
+    }
+    public class Image : MonoBehaviour { public int DirtyCalls; public void SetVerticesDirty() => DirtyCalls++; }
+    public class Mask : MonoBehaviour { }
+    public class VertexHelper
+    {
+        public readonly List<UIVertex> Vertices = new List<UIVertex>();
+        public int currentVertCount => Vertices.Count;
+        public void PopulateUIVertex(ref UIVertex vertex, int index) => vertex = Vertices[index];
+        public void SetUIVertex(UIVertex vertex, int index) => Vertices[index] = vertex;
+    }
     public class ScrollRect : MonoBehaviour
     {
         public readonly List<string> Calls = new List<string>();
@@ -212,7 +285,9 @@ namespace ChatPlus
         internal static bool Copy() => false;
     }
     internal sealed class TestSetting { internal bool Value = true; }
-    internal sealed class Plugin { internal static Plugin Instance = new Plugin(); internal TestSetting RightClickCopy = new TestSetting(); }
+    internal sealed class TestIntSetting { internal int Value = 100; }
+    internal sealed class Plugin { internal static Plugin Instance = new Plugin(); internal TestSetting RightClickCopy = new TestSetting(); internal TestIntSetting BackgroundOpacity = new TestIntSetting(); }
+    internal static class OutlineResets { internal static bool Resetting; }
     internal static class ChatLines { internal static LineStyle Style = new LineStyle(); }
     internal static class LineSizer { internal static void Apply(TMP_Text text) { } }
     internal sealed class Lang { internal static Lang Current = new Lang(); internal string Copied = "Copied"; }
