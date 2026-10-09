@@ -18,7 +18,7 @@ namespace ChatPlus
     {
         public const string PluginGuid = "ontogether.chatplus";
         public const string PluginName = "ChatPlus";
-        public const string PluginVersion = "1.4.2";
+        public const string PluginVersion = "1.5.0";
 
         internal const int MinWidth = 70;
         internal const int MaxWidth = 300;
@@ -89,6 +89,15 @@ namespace ChatPlus
         internal ConfigEntry<bool> OutgoingBold;
         internal ConfigEntry<bool> OutgoingItalic;
 
+        internal ConfigEntry<bool> NicknameEnabled;
+        internal ConfigEntry<bool> NicknameWorld;
+        internal ConfigEntry<MessageFont> NicknameFont;
+        internal ConfigEntry<MessageColorMode> NicknameColorMode;
+        internal ConfigEntry<string> NicknameColor;
+        internal ConfigEntry<string> NicknameEndColor;
+        internal ConfigEntry<bool> NicknameBold;
+        internal ConfigEntry<bool> NicknameItalic;
+
         internal ChatHistory History { get; private set; }
         internal SentHistory Sent { get; } = new SentHistory(SentCapacity);
         internal IList<string> KeywordList => _keywords;
@@ -150,6 +159,9 @@ namespace ChatPlus
             Patch(typeof(EndMovePatch), "the chat position is not remembered");
             Patch(typeof(EnterPatch), "the /chatplus command and Up/Down recall will not work");
             Patch(typeof(OutgoingMessagePatch), "outgoing message formatting will not work");
+            Patch(typeof(OutgoingNicknamePatch), "outgoing nickname formatting will not work");
+            Patch(typeof(WorldNicknamePayloadPatch), "nickname styling will not apply to nameplates and the player list");
+            Patch(typeof(WorldNicknameListPatch), "an open player list may not refresh immediately after a nickname update");
             Patch(typeof(ReceivedCounterPatch), "collapsed chat counters update only at the end of the frame");
             Patch(typeof(HideChatCounterPatch), "collapsed chat counters update only at the end of the frame");
             GameAccess.LogMissingFields();
@@ -248,6 +260,19 @@ namespace ChatPlus
             OutgoingEndColor = Config.Bind("Outgoing", "EndColor", "#6AA8FF", "Last gradient color: #RRGGBB.");
             OutgoingBold = Config.Bind("Outgoing", "Bold", false, "Use the game's bold text tag on outgoing messages.");
             OutgoingItalic = Config.Bind("Outgoing", "Italic", false, "Use the game's italic text tag on outgoing messages.");
+
+            NicknameEnabled = Config.Bind("Nickname", "Enabled", false,
+                "Style your name on newly sent chat messages. Visible on unmodified clients; the saved account name is unchanged.");
+            NicknameWorld = Config.Bind("Nickname", "NameplatesAndTab", true,
+                "Also synchronize nickname styling above your character and in the player list. Uses the game's shared profile name, also shown on ID cards. The saved name is unchanged.");
+            NicknameFont = Config.Bind("Nickname", "Font", MessageFont.GameDefault,
+                "GameDefault or LiberationSans. Cyrillic uses the game's usual fallback font.");
+            NicknameColorMode = Config.Bind("Nickname", "ColorMode", MessageColorMode.Original,
+                "Original, Solid or Gradient. Independent of outgoing message styling.");
+            NicknameColor = Config.Bind("Nickname", "Color", "#F2C46D", "Nickname color or first gradient color: #RRGGBB.");
+            NicknameEndColor = Config.Bind("Nickname", "EndColor", "#6AA8FF", "Last nickname gradient color: #RRGGBB.");
+            NicknameBold = Config.Bind("Nickname", "Bold", false, "Use bold text for your chat nickname.");
+            NicknameItalic = Config.Bind("Nickname", "Italic", false, "Use italic text for your chat nickname.");
         }
 
         internal OutgoingStyle BuildOutgoingStyle() => new OutgoingStyle
@@ -272,6 +297,13 @@ namespace ChatPlus
                 Log.LogError($"Could not patch the game ({consequence}): {e}");
             }
         }
+
+        internal OutgoingStyle BuildNicknameStyle() => new OutgoingStyle
+        {
+            Enabled = NicknameEnabled.Value, Font = NicknameFont.Value, ColorMode = NicknameColorMode.Value,
+            Color = NicknameColor.Value, EndColor = NicknameEndColor.Value,
+            Bold = NicknameBold.Value, Italic = NicknameItalic.Value
+        };
 
         internal LineStyle BuildStyle(string myName, Lang lang)
         {
@@ -307,6 +339,8 @@ namespace ChatPlus
                 HandleHotkeys();
                 HandleRecall();
                 ChatWindow.Tick();
+                try { NicknameSync.Tick(); }
+                catch (Exception error) { LogError("Could not synchronize nickname: ", error); }
                 ChatSelection.Tick(_window != null && _window.enabled);
                 PollConfigFile();
                 float now = Time.unscaledTime;
@@ -650,6 +684,7 @@ namespace ChatPlus
 
         void OnDestroy()
         {
+            NicknameSync.Clear();
             if (_dock != null) Destroy(_dock.gameObject);
             ChatSelection.Clear();
             HiddenChatNotifications.Clear();

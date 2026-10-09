@@ -10,7 +10,7 @@ A BepInEx mod for [On Together](https://store.steampowered.com/app/2688490/On_To
 
 ## Settings menu
 
-**F3**, `/chatplus`, the chat-header gear or the speech-bubble side button open/close settings. Tabs: **Appearance**, **Messages**, **History**, **Controls**. Advanced rows collapse.
+**F3**, `/chatplus`, the chat-header gear or the speech-bubble side button open/close settings. Tabs: **Appearance**, **Messages**, **Nickname**, **History**, **Controls**. Advanced rows collapse.
 
 Cream panels, warm brown text, coral accents, rounded controls and game fonts. Side buttons form one group, show the mod name and the settings hotkey (where available), and move away from visible UI panels. If both edges are blocked, the buttons wait until space becomes available. Existing hotkeys, commands and configuration keys are preserved. Menus scroll on smaller screens; changes save automatically. Where shown, **Apply** saves a field draft. Invalid values keep the saved setting.
 
@@ -31,7 +31,8 @@ Cream panels, warm brown text, coral accents, rounded controls and game fonts. S
 - **Settings in the game's style:** a cream/coral F3 window with **Appearance**, **Messages**, **History** and **Controls** tabs, live previews and collapsible advanced options. Open it with **F3**, `/chatplus` or the **gear in the chat header**. The header also shows scrolling, selection and copying hints. Settings save automatically; mod-manager config edits apply while the game is running.
 - **Message editor** in **F3 → Messages**: a draft, live preview using the game's text renderer, font selection, solid colors or gradients, bold and italic. Choose colors from presets, type `#RRGGBB`, or click the swatch for RGB sliders. **Insert into chat** copies the draft into the normal chat input; press Enter there to send.
 - Optional outgoing formatting uses the game's standard text tags, so recipients do not need ChatPlus. Font choices are the normal game font and built-in **Liberation Sans**; Liberation Sans changes Latin letters, while Russian letters keep the usual fallback font. Gradients use up to eight color bands and fewer bands when needed to fit the game's 250-character limit (including tags). Messages that cannot fit are not sent or truncated, and the draft is kept. Commands and manually tagged messages are left alone.
-- Only the sender needs the mod. Other features remain local; outgoing formatting is sent as part of the ordinary message text. English and Russian interface (follows the game's language).
+- **Nickname styling** in **F3 → Nickname**: independently choose the game font or Liberation Sans, a solid color or gradient, bold and italic, with presets, HEX/RGB controls, preview and reset. Enable it to style your name on new Global/Local chat messages, including for recipients without mods. **Above my character and in Tab** also synchronizes the style through the game's shared profile name, including on ID cards and for newly joining players. Updates follow a short pause after editing; turning this scope off restores your original world name. Your saved nickname stays unchanged; old chat messages keep their original appearance. Nickname styling is off by default and leaves the message's 250-character budget intact.
+- Only the sender needs the mod. Other features remain local; outgoing message and nickname formatting use the game's normal chat transmission. English and Russian interface (follows the game's language).
 
 ## Usage
 
@@ -43,6 +44,7 @@ Cream panels, warm brown text, coral accents, rounded controls and game fonts. S
 | Text size | `/chatplus text 120` |
 | Background opacity | **F3 → Appearance → Background opacity** (0–100%) |
 | Message editor | **F3 → Messages** |
+| Nickname style | **F3 → Nickname** |
 | Scroll the chat | left-button drag / swipe, or mouse wheel |
 | Select / copy text | hold **Shift** before left-dragging, then **Ctrl+C** or right-click within the selection; **Escape** clears |
 | Message time | `/chatplus time on`, `/chatplus time off`, `/chatplus time format HH:mm:ss` |
@@ -70,6 +72,12 @@ Cream panels, warm brown text, coral accents, rounded controls and game fonts. S
 | Outgoing | `ColorMode` | `Original` | `Original`, `Solid` or `Gradient`. |
 | Outgoing | `Color`, `EndColor` | `#F2C46D`, `#6AA8FF` | Solid/first color and last gradient color, as `#RRGGBB`. |
 | Outgoing | `Bold`, `Italic` | `false`, `false` | Bold and italic tags on outgoing messages. |
+| Nickname | `Enabled` | `false` | Style your name on new outgoing chat messages; recipients do not need the mod. |
+| Nickname | `NameplatesAndTab` | `true` | Also style the shared name above your character, in Tab and on ID cards while nickname styling is enabled. |
+| Nickname | `Font` | `GameDefault` | `GameDefault` or `LiberationSans`; Cyrillic uses the normal fallback. |
+| Nickname | `ColorMode` | `Original` | `Original`, `Solid` or `Gradient`, independent of message styling. |
+| Nickname | `Color`, `EndColor` | `#F2C46D`, `#6AA8FF` | Solid/first and last nickname gradient colors, as `#RRGGBB`. |
+| Nickname | `Bold`, `Italic` | `false`, `false` | Bold and italic tags on your chat nickname. |
 | Time | `Enabled` | `true` | Show the time in front of every message. |
 | Time | `Format` | `HH:mm` | .NET time format: `HH:mm`, `HH:mm:ss`, `h:mm tt`, `[HH:mm]`... |
 | Time | `Color` | `#F5EDE1A6` | `#RRGGBB` or `#RRGGBBAA`; empty = the text's color. |

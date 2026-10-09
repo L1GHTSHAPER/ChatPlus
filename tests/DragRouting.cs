@@ -286,7 +286,7 @@ namespace ChatPlus
     }
     internal sealed class TestSetting { internal bool Value = true; }
     internal sealed class TestIntSetting { internal int Value = 100; }
-    internal sealed class Plugin { internal static Plugin Instance = new Plugin(); internal TestSetting RightClickCopy = new TestSetting(); internal TestIntSetting BackgroundOpacity = new TestIntSetting(); }
+    internal sealed partial class Plugin { internal static Plugin Instance = new Plugin(); internal TestSetting RightClickCopy = new TestSetting(); internal TestIntSetting BackgroundOpacity = new TestIntSetting(); }
     internal static class OutlineResets { internal static bool Resetting; }
     internal static class ChatLines { internal static LineStyle Style = new LineStyle(); }
     internal static class LineSizer { internal static void Apply(TMP_Text text) { } }

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.0
+
+- Added a Nickname tab with independent font, solid color/gradient, bold and italic settings, RGB/HEX controls, live preview and reset. Nickname styling is off by default.
+- Nickname styling is sent in the game's separate name field on new Global and Local chat messages, so recipients do not need ChatPlus. The saved name and the message's 250-character budget are preserved.
+- Added an optional Nameplates and Tab setting (on by default when nickname styling is enabled). Styles synchronize through the game's own profile updates after controls settle, including for recipients without mods and newly joining players. The shared profile name also appears on ID cards. Turning the option off restores the original world name.
+- Reused the message formatter's Unicode-aware gradient bands and balanced tags. Names that cannot fit the style keep their original formatting without truncation.
+
 ## 1.4.2
 
 - Cream panels, warm brown text, coral accents, rounded controls and game fonts.

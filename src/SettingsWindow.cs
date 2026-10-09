@@ -33,7 +33,7 @@ namespace ChatPlus
         Vector2 _scroll;
         int _tab;
         int _pendingTab = -1;
-        readonly Vector2[] _tabScrolls = new Vector2[4];
+        readonly Vector2[] _tabScrolls = new Vector2[5];
         bool _windowExpanded;
         bool _timeExpanded;
         bool _previewDrawn;
@@ -181,14 +181,15 @@ namespace ChatPlus
 
         void DrawTabs(Lang lang)
         {
-            string[] names = { lang.TabAppearance, lang.TabMessages, lang.TabHistory, lang.TabControls };
-            int columns = _rect.width < 480f ? 2 : 4;
-            for (int row = 0; row < 4 / columns; row++)
+            string[] names = { lang.TabAppearance, lang.TabMessages, lang.TabNickname, lang.TabHistory, lang.TabControls };
+            int columns = _rect.width < 480f ? 2 : names.Length;
+            for (int row = 0; row < (names.Length + columns - 1) / columns; row++)
             {
                 GUILayout.BeginHorizontal();
                 for (int column = 0; column < columns; column++)
                 {
                     int tab = row * columns + column;
+                    if (tab >= names.Length) { GUILayout.FlexibleSpace(); break; }
                     if (GUILayout.Button(names[tab], tab == _tab ? _skin.SelectedTab : _skin.Tab))
                         _pendingTab = tab;
                 }
@@ -202,8 +203,9 @@ namespace ChatPlus
             {
                 case 0: DrawAppearance(plugin, lang); break;
                 case 1: DrawMessageEditor(plugin, lang); break;
-                case 2: DrawHistory(plugin, lang); break;
-                case 3: DrawControls(plugin, lang); break;
+                case 2: DrawNicknameEditor(plugin, lang); break;
+                case 3: DrawHistory(plugin, lang); break;
+                case 4: DrawControls(plugin, lang); break;
             }
         }
 
@@ -389,21 +391,8 @@ namespace ChatPlus
             bool enabled = GUI.enabled;
             GUILayout.BeginVertical(_skin.Panel);
             GUILayout.Label(lang.SectionOutgoing, _skin.SectionTitle);
-            ToggleRow(plugin.OutgoingEnabled, lang.OutgoingEnable);
-            GUI.enabled = enabled && plugin.OutgoingEnabled.Value;
-            MessageFont font = plugin.OutgoingFont.Value;
-            ChoiceRow(lang.OutgoingFont, font == MessageFont.LiberationSans ? "Liberation Sans" : lang.OutgoingDefaultFont,
-                step => plugin.OutgoingFont.Value = plugin.OutgoingFont.Value == MessageFont.GameDefault ? MessageFont.LiberationSans : MessageFont.GameDefault);
-            GUILayout.Label(font == MessageFont.LiberationSans ? lang.OutgoingFontHint : lang.OutgoingDefaultHint, _skin.Hint);
-            int mode = Mathf.Clamp((int)plugin.OutgoingColorMode.Value, 0, 2);
-            ChoiceRow(lang.OutgoingColorMode, lang.OutgoingColorModes[mode],
-                step => plugin.OutgoingColorMode.Value = (MessageColorMode)((mode + step + 3) % 3));
-            if (mode != 0)
-                EditableColorRow(mode == 2 ? lang.OutgoingStartColor : lang.TimeColor, plugin.OutgoingColor, lang);
-            if (mode == 2)
-                EditableColorRow(lang.OutgoingEndColor, plugin.OutgoingEndColor, lang);
-            ToggleRow(plugin.OutgoingBold, lang.OutgoingBold);
-            ToggleRow(plugin.OutgoingItalic, lang.OutgoingItalic);
+            DrawStyleControls(lang.OutgoingEnable, plugin.OutgoingEnabled, plugin.OutgoingFont, plugin.OutgoingColorMode,
+                plugin.OutgoingColor, plugin.OutgoingEndColor, plugin.OutgoingBold, plugin.OutgoingItalic, lang);
             GUI.enabled = enabled;
             GUILayout.Label(lang.OutgoingDraft, _skin.Label);
             _editorDraft = GUILayout.TextArea(_editorDraft, 1000, _skin.EditorInput, GUILayout.Height(54f));
@@ -423,6 +412,35 @@ namespace ChatPlus
                     previewText, 18f, UiSkin.TextColor);
                 _previewDrawn = true;
             }
+            DrawMessageEditorActions(plugin, lang, fits, enabled);
+            GUILayout.EndVertical();
+        }
+
+        void DrawStyleControls(string label, ConfigEntry<bool> apply, ConfigEntry<MessageFont> fontEntry,
+            ConfigEntry<MessageColorMode> modeEntry, ConfigEntry<string> color, ConfigEntry<string> endColor,
+            ConfigEntry<bool> bold, ConfigEntry<bool> italic, Lang lang)
+        {
+            bool enabled = GUI.enabled;
+            ToggleRow(apply, label);
+            GUI.enabled = enabled && apply.Value;
+            MessageFont font = fontEntry.Value;
+            ChoiceRow(lang.OutgoingFont, font == MessageFont.LiberationSans ? "Liberation Sans" : lang.OutgoingDefaultFont,
+                step => fontEntry.Value = fontEntry.Value == MessageFont.GameDefault ? MessageFont.LiberationSans : MessageFont.GameDefault);
+            GUILayout.Label(font == MessageFont.LiberationSans ? lang.OutgoingFontHint : lang.OutgoingDefaultHint, _skin.Hint);
+            int mode = Mathf.Clamp((int)modeEntry.Value, 0, 2);
+            ChoiceRow(lang.OutgoingColorMode, lang.OutgoingColorModes[mode],
+                step => modeEntry.Value = (MessageColorMode)((mode + step + 3) % 3));
+            if (mode != 0)
+                EditableColorRow(mode == 2 ? lang.OutgoingStartColor : lang.TimeColor, color, lang);
+            if (mode == 2)
+                EditableColorRow(lang.OutgoingEndColor, endColor, lang);
+            ToggleRow(bold, lang.OutgoingBold);
+            ToggleRow(italic, lang.OutgoingItalic);
+            GUI.enabled = enabled;
+        }
+
+        void DrawMessageEditorActions(Plugin plugin, Lang lang, bool fits, bool enabled)
+        {
             bool wide = _rect.width >= 480f;
             if (wide) GUILayout.BeginHorizontal();
             GUI.enabled = enabled && fits && !string.IsNullOrWhiteSpace(_editorDraft) && GameAccess.MessageInput != null;
@@ -453,6 +471,47 @@ namespace ChatPlus
                 GUILayout.EndHorizontal();
             }
             GUILayout.Label(lang.OutgoingHint, _skin.Hint);
+        }
+
+        void DrawNicknameEditor(Plugin plugin, Lang lang)
+        {
+            GUILayout.BeginVertical(_skin.Panel);
+            GUILayout.Label(lang.NicknameTitle, _skin.SectionTitle);
+            DrawStyleControls(lang.NicknameEnable, plugin.NicknameEnabled, plugin.NicknameFont, plugin.NicknameColorMode,
+                plugin.NicknameColor, plugin.NicknameEndColor, plugin.NicknameBold, plugin.NicknameItalic, lang);
+            bool enabled = GUI.enabled;
+            GUI.enabled = enabled && plugin.NicknameEnabled.Value;
+            ToggleRow(plugin.NicknameWorld, lang.NicknameWorld);
+            GUI.enabled = enabled;
+            string name = GameAccess.LocalPlayerName;
+            if (string.IsNullOrEmpty(name)) name = lang.NicknameSample;
+            var style = plugin.BuildNicknameStyle();
+            bool fits = OutgoingFormat.TryComposeNickname(name, style, out _);
+            GUILayout.Label(lang.OutgoingPreview, _skin.Label);
+            Rect preview = GUILayoutUtility.GetRect(10f, 88f, GUILayout.ExpandWidth(true));
+            GUI.Box(preview, GUIContent.none, _skin.Panel);
+            if (Event.current.type == EventType.Repaint)
+            {
+                OutgoingFormat.TryCompose(lang.OutgoingSample, plugin.BuildOutgoingStyle(), out string message);
+                _messagePreview.Draw(new Rect(preview.x + 8f, preview.y + 4f, preview.width - 16f, preview.height - 8f),
+                    NicknameFormat.Compose(name, style) + ": " + message, 18f, UiSkin.TextColor);
+                _previewDrawn = true;
+            }
+            if (!fits) GUILayout.Label(lang.NicknameFallback, _skin.Hint);
+            if (GUILayout.Button(lang.OutgoingReset, _skin.Button))
+            {
+                plugin.NicknameEnabled.Value = false;
+                plugin.NicknameWorld.Value = true;
+                plugin.NicknameFont.Value = MessageFont.GameDefault;
+                plugin.NicknameColorMode.Value = MessageColorMode.Original;
+                plugin.NicknameColor.Value = "#F2C46D";
+                plugin.NicknameEndColor.Value = "#6AA8FF";
+                plugin.NicknameBold.Value = plugin.NicknameItalic.Value = false;
+                _colorDrafts.Clear();
+                _colorValues.Clear();
+            }
+            GUILayout.Label(lang.NicknameHint, _skin.Hint);
+            GUILayout.Label(lang.NicknameWorldHint, _skin.Hint);
             GUILayout.EndVertical();
         }
 

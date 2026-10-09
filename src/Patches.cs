@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
 using HarmonyLib;
 using TMPro;
@@ -266,6 +267,50 @@ namespace ChatPlus
                 Plugin.LogError("Chat command failed: ", e);
             }
             return true;
+        }
+    }
+
+    [HarmonyPatch]
+    internal static class WorldNicknamePayloadPatch
+    {
+        static IEnumerable<MethodBase> TargetMethods()
+        {
+            yield return AccessTools.Method(typeof(PlayerCustomizationController), "UpdateOnNewPeopleJoin");
+            yield return AccessTools.Method(typeof(PlayerCustomizationController), "UpdatePlayerInfo");
+        }
+
+        [HarmonyPrefix]
+        static void Prefix(PlayerCustomizationController __instance, ref PlayerIDInfo playerIDInfo)
+        {
+            try { NicknameSync.FormatOutgoing(__instance, ref playerIDInfo); }
+            catch (Exception error) { Plugin.LogError("Could not style world nickname: ", error); }
+        }
+    }
+
+    [HarmonyPatch]
+    internal static class WorldNicknameListPatch
+    {
+        static IEnumerable<MethodBase> TargetMethods()
+        {
+            yield return AccessTools.Method(typeof(PlayerCustomizationController), "UpdatePlayerInfo_Original_2");
+            yield return AccessTools.Method(typeof(PlayerCustomizationController), "UpdatePlayerIdInfos_Original_3");
+        }
+
+        [HarmonyPostfix]
+        static void Postfix() => NicknameSync.RefreshList();
+    }
+
+    [HarmonyPatch(typeof(TextChannelManager), nameof(TextChannelManager.SendMessageAsync))]
+    internal static class OutgoingNicknamePatch
+    {
+        [HarmonyPrefix]
+        [HarmonyPriority(Priority.Last)]
+        static void Prefix(ref byte[] userName)
+        {
+            Plugin plugin = Plugin.Instance;
+            if (plugin == null || !plugin.NicknameEnabled.Value) return;
+            try { userName = NicknameFormat.Apply(userName, plugin.BuildNicknameStyle()); }
+            catch (Exception error) { Plugin.LogError("Could not format outgoing nickname: ", error); }
         }
     }
 

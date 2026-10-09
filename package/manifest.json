@@ -1,8 +1,8 @@
 {
   "name": "ChatPlus",
-  "version_number": "1.4.2",
+  "version_number": "1.5.0",
   "website_url": "https://github.com/L1GHTSHAPER/ChatPlus",
-  "description": "Chat history, timestamps, selection and copying, resizing, opacity, message counters and a font/color editor. Cream settings with tabs and previews. Open with F3, /chatplus, chat gear or the grouped side button.",
+  "description": "Chat history, timestamps, selection, resizing and opacity. Style messages and your nickname with fonts, colors and gradients, including nameplates and Tab. Settings with tabs and previews: F3, /chatplus, chat gear or side button.",
   "dependencies": [
     "BepInEx-BepInExPack-5.4.2305"
   ]

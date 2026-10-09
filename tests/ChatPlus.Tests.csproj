@@ -14,6 +14,9 @@
     <Compile Include="..\src\ChatEntry.cs" Link="Mod\ChatEntry.cs" />
     <Compile Include="..\src\ChatFormat.cs" Link="Mod\ChatFormat.cs" />
     <Compile Include="..\src\OutgoingFormat.cs" Link="Mod\OutgoingFormat.cs" />
+    <Compile Include="..\src\NicknameFormat.cs" Link="Mod\NicknameFormat.cs" />
+    <Compile Include="..\src\NicknameSync.cs" Link="Mod\NicknameSync.cs" />
+    <Compile Include="..\src\NicknameSyncState.cs" Link="Mod\NicknameSyncState.cs" />
     <Compile Include="..\src\ChatHistory.cs" Link="Mod\ChatHistory.cs" />
     <Compile Include="..\src\HistoryFormat.cs" Link="Mod\HistoryFormat.cs" />
     <Compile Include="..\src\Presets.cs" Link="Mod\Presets.cs" />

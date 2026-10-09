@@ -35,6 +35,8 @@ namespace ChatPlus.Tests
             HistoryFormatTests();
             ChatFormatTests();
             OutgoingFormatTests();
+            NicknameFormatTests.Run(Check);
+            NicknameSyncTests.Run(Check);
             SentHistoryTests();
             HiddenMessageCountsTests();
             PresetTests();

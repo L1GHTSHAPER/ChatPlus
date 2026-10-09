@@ -41,6 +41,25 @@ namespace ChatPlus
             if (HasManualFormatting(result))
                 return result.Length <= WireLimit;
 
+            return TryComposeStyled(result, style, WireLimit, out result);
+        }
+
+        // Names travel in their own RPC argument, independently of the 250-character message budget.
+        internal static bool TryComposeNickname(string name, OutgoingStyle style, out string result)
+        {
+            result = name ?? string.Empty;
+            if (style == null || !style.Enabled || result.Length == 0) return true;
+            string plain = TextUtil.Plain(result);
+            if (string.IsNullOrWhiteSpace(plain)) return false;
+            if (!TryComposeStyled(plain, style, 512, out string styled)) return false;
+            result = styled;
+            return true;
+        }
+
+        static bool TryComposeStyled(string text, OutgoingStyle style, int limit, out string result)
+        {
+            result = text;
+
             string open = string.Empty, close = string.Empty;
             if (style.Font == MessageFont.LiberationSans)
             {
@@ -50,7 +69,7 @@ namespace ChatPlus
             if (style.Bold) { open += "<b>"; close = "</b>" + close; }
             if (style.Italic) { open += "<i>"; close = "</i>" + close; }
 
-            int budget = WireLimit - result.Length - open.Length - close.Length;
+            int budget = limit - result.Length - open.Length - close.Length;
             if (budget < 0)
                 return false;
             string body = result;
