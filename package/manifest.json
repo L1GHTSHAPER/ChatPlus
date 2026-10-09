@@ -1,6 +1,6 @@
 {
   "name": "ChatPlus",
-  "version_number": "1.5.0",
+  "version_number": "1.5.1",
   "website_url": "https://github.com/L1GHTSHAPER/ChatPlus",
   "description": "Chat history, timestamps, selection, resizing and opacity. Style messages and your nickname with fonts, colors and gradients, including nameplates and Tab. Settings with tabs and previews: F3, /chatplus, chat gear or side button.",
   "dependencies": [

@@ -16,6 +16,31 @@ namespace ChatPlus
         {
             return Find(width,height,36*scale,36*scale,6*scale,12*scale,count,obstacles,out result);
         }
+        // Preserve the native left edge and row spacing, including the part beyond the monitor.
+        internal static bool FindRight(float width,float height,float x,float buttonWidth,float buttonHeight,float gap,
+            float preferredTop,float margin,int count,IReadOnlyList<Box> obstacles,out Box result)
+        {
+            result=default;
+            float pitch=buttonHeight+gap, total=count*pitch-gap;
+            if(count<=0 || buttonWidth<=0 || buttonHeight<=0 || gap<0 || x<0 || x>=width ||
+                x+buttonWidth<width || total+2*margin>height) return false;
+            int first=(int)Math.Ceiling((margin-preferredTop)/pitch);
+            int last=(int)Math.Floor((height-margin-total-preferredTop)/pitch);
+            var rows=new List<int>();
+            for(int row=Math.Max(0,first);row<=last;row++) rows.Add(row);
+            for(int row=Math.Min(-1,last);row>=first;row--) rows.Add(row);
+            foreach(int offset in rows)
+            {
+                // Start directly below the game buttons when possible; otherwise use a free earlier row.
+                float y=preferredTop+offset*pitch;
+                var visible=new Box(x,y,width-x,total);
+                bool blocked=false;
+                foreach(var obstacle in obstacles) if(obstacle.Overlaps(visible)) { blocked=true;break; }
+                if(blocked) continue;
+                result=new Box(x,y,buttonWidth,total);return true;
+            }
+            return false;
+        }
         internal static bool Find(float width,float height,float buttonWidth,float buttonHeight,float gap,float margin,int count,IReadOnlyList<Box> obstacles,out Box result)
         {
             float total=count*(buttonHeight+gap)-gap;

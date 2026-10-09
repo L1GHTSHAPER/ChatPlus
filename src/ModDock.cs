@@ -15,8 +15,9 @@ namespace ChatPlus
         Func<bool> _isOpen, _visible;
         Image _image;
         Image _iconImage;
+        Image _outlineImage;
         Button _control, _native;
-        Image _nativeBackground, _nativeIcon;
+        Image _nativeBackground, _nativeIcon, _nativeOutline;
         Text _tooltip;
         RectTransform _tooltipRect;
         Sprite _background, _icon;
@@ -43,6 +44,8 @@ namespace ChatPlus
             var dock = button.AddComponent<ModDock>();
             dock._hint = hint; dock._isOpen = open; dock._visible = visible ?? (() => true);
             dock._group = button.GetComponent<CanvasGroup>();
+            dock._group.alpha = 0f;
+            ((RectTransform)button.transform).anchoredPosition = new Vector2(-10000,-10000);
             dock._image = button.GetComponent<Image>();
             dock._backgroundTexture = RoundedTexture();
             dock._background = Sprite.Create(dock._backgroundTexture, new Rect(0, 0, 64, 64), new Vector2(.5f, .5f), 100f, 0, SpriteMeshType.FullRect, new Vector4(16,16,16,16));
@@ -50,11 +53,17 @@ namespace ChatPlus
             dock._image.type = Image.Type.Sliced;
             var control = button.GetComponent<Button>();
             dock._control = control;
+            control.targetGraphic = dock._image;
             control.navigation = new Navigation { mode = Navigation.Mode.None };
             var colors = control.colors;
             colors.normalColor = Color.white; colors.highlightedColor = new Color(1f, .88f, .8f); colors.pressedColor = new Color(.95f, .8f, .68f);
             control.colors = colors;
             control.onClick.AddListener(() => { toggle(); EventSystem.current?.SetSelectedGameObject(null); });
+            var outline = new GameObject("Outline", typeof(RectTransform), typeof(Image));
+            outline.transform.SetParent(button.transform, false);
+            dock._outlineImage = outline.GetComponent<Image>();
+            dock._outlineImage.raycastTarget = false;
+            dock._outlineImage.enabled = false;
             var icon = new GameObject("Icon", typeof(RectTransform), typeof(Image));
             icon.transform.SetParent(button.transform, false);
             var ir = (RectTransform)icon.transform;
@@ -88,15 +97,13 @@ namespace ChatPlus
         {
             ApplyNativeStyle();
             float nativeOpacity = NativeSidebar.Opacity;
-            bool visible = _visible() && nativeOpacity > .01f;
+            bool visible = _visible() && nativeOpacity > .01f && ((RectTransform)transform).anchoredPosition.x > -9000f;
             _group.alpha = visible ? nativeOpacity : 0f;
             _group.blocksRaycasts = visible;
             _group.interactable = visible;
             if (!visible) _hover = false;
-            // The game button has several visual layers; its root Image alone is a translucent hit area.
-            // Keep our complete bordered surface opaque instead of copying that hit-area tint/sprite.
-            _image.color = _isOpen() ? new Color(1f,.84f,.74f,1f) : Color.white;
-            _iconImage.color = new Color(.43f,.34f,.35f,1f);
+            _image.color = _native != null ? NativeSidebar.SurfaceColor(_hover || _isOpen()) : Color.white;
+            _iconImage.color = _nativeOutline != null ? _nativeOutline.color : new Color(.43f,.34f,.35f,1f);
             if (transform.GetSiblingIndex() == 0 && Time.unscaledTime >= _nextLayout)
             {
                 _nextLayout = Time.unscaledTime + .15f;
@@ -111,12 +118,12 @@ namespace ChatPlus
                 _tooltip.fontSize = Mathf.RoundToInt(13 * scale);
                 float width = Mathf.Min(Screen.width - 24f, Mathf.Max(140f * scale, _tooltip.preferredWidth + 24f));
                 var rect = (RectTransform)transform;
-                float px = rect.anchoredPosition.x;
-                bool right = px > Screen.width * .5f;
-                _tooltipRect.pivot = new Vector2(right ? 1f : 0f, .5f);
-                _tooltipRect.anchorMin = _tooltipRect.anchorMax = new Vector2(.5f,.5f);
+                _tooltipRect.pivot = new Vector2(1f,.5f);
+                _tooltipRect.anchorMin = _tooltipRect.anchorMax = new Vector2(0f,.5f);
                 _tooltipRect.sizeDelta = new Vector2(width, 32f * scale);
-                _tooltipRect.anchoredPosition = new Vector2((right ? -1f : 1f) * (rect.sizeDelta.x * .5f + 8f), 0f);
+                float tipRight = Mathf.Min(Screen.width-12f,rect.anchoredPosition.x-8f);
+                tipRight = Mathf.Max(width+12f,tipRight);
+                _tooltipRect.anchoredPosition = new Vector2(tipRight-rect.anchoredPosition.x, 0f);
             }
         }
         void ApplyNativeStyle()
@@ -125,19 +132,26 @@ namespace ChatPlus
             if (native == null) return;
             Image background = NativeSidebar.Background(native);
             if (background == null) return;
-            if (_native != native)
+            _native = native;
+            _nativeBackground = background;
+            _nativeIcon = NativeSidebar.Icon(native);
+            _nativeOutline = NativeSidebar.Outline(native);
+            _control.transition = native.transition == Selectable.Transition.ColorTint ? native.transition : Selectable.Transition.None;
+            _control.colors = native.colors;
+            NativeSidebar.CopyImage(_nativeBackground,_image);
+            float scale = NativeSidebar.PixelScale(background);
+            if (_nativeOutline != null)
             {
-                _native = native;
-                _nativeBackground = background;
-                _nativeIcon = NativeSidebar.Icon(native);
-                _control.transition = Selectable.Transition.ColorTint;
-                var colors = _control.colors;
-                colors.normalColor = Color.white;
-                colors.highlightedColor = new Color(1f,.93f,.88f,1f);
-                colors.pressedColor = new Color(.96f,.81f,.72f,1f);
-                colors.selectedColor = Color.white;
-                _control.colors = colors;
-                _image.type = Image.Type.Sliced;
+                _outlineImage.enabled = true;
+                NativeSidebar.CopyImage(_nativeOutline,_outlineImage);
+                NativeSidebar.CopyRect(_nativeOutline.rectTransform,_outlineImage.rectTransform,scale);
+            }
+            else _outlineImage.enabled = false;
+            if (_nativeIcon != null)
+            {
+                NativeSidebar.CopyRect(_nativeIcon.rectTransform,_iconImage.rectTransform,scale);
+                float side = Mathf.Min(_nativeIcon.rectTransform.rect.width,_nativeIcon.rectTransform.rect.height)*scale;
+                _iconImage.rectTransform.sizeDelta = new Vector2(side,side);
             }
         }
         void LayoutGroup()
@@ -165,10 +179,12 @@ namespace ChatPlus
                 _obstacles.Add(new DockLayout.Box(rect.x,rect.y,rect.width,rect.height));
             }
             var children = transform.parent.Cast<Transform>().Where(t => t.GetComponent<Button>() != null).ToArray();
-            float scale = UiEnvironment.Scale, gap = 6f * scale;
-            Vector2 size = NativeSidebar.Size;
-            if (size.x < 1f || size.y < 1f) size = new Vector2(36f*scale,36f*scale);
-            bool found = DockLayout.Find(Screen.width,Screen.height,size.x,size.y,gap,12f*scale,children.Length,_obstacles,out var groupRect);
+            float scale = UiEnvironment.Scale;
+            bool geometry = NativeSidebar.TryGeometry(out var nativeBounds,out float gap,out float preferredTop);
+            Vector2 size = nativeBounds.size;
+            var groupRect = default(DockLayout.Box);
+            bool found = geometry && DockLayout.FindRight(Screen.width,Screen.height,nativeBounds.x,size.x,size.y,gap,
+                preferredTop,6f*scale,children.Length,_obstacles,out groupRect);
             for (int i = 0; i < children.Length; i++)
             {
                 var rect = (RectTransform)children[i];
